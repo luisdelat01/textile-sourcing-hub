@@ -1,291 +1,451 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Plus, Send, Save, Calculator, Eye } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useForm } from "react-hook-form";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { CalendarIcon, Send, TestTube, Calculator, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Quote, QuoteLine } from "@/types/quote";
+import { QuotePDFButton } from "@/components/QuotePDFButton";
+
+// Mock current selection data
+const mockSelection = {
+  id: "sel-001",
+  name: "FW26 Development Selection",
+  lines: [
+    {
+      productId: "prod-001",
+      name: "Premium Cotton Poplin",
+      unit: "yard",
+      quantity: 1000,
+      price: 8.50,
+      labDipRequired: true
+    },
+    {
+      productId: "prod-002",
+      name: "Stretch Poly Blend",
+      unit: "yard", 
+      quantity: 2500,
+      price: 6.25,
+      labDipRequired: false
+    },
+    {
+      productId: "prod-003",
+      name: "Organic Linen Canvas",
+      unit: "meter",
+      quantity: 800,
+      price: 12.75,
+      labDipRequired: true
+    }
+  ]
+};
+
+const unitOptions = ["yard", "meter", "piece", "roll", "kg"];
+const incotermsOptions = ["EXW", "FOB", "CIF", "DAP", "DDP", "FCA"];
 
 export default function QuoteEditor() {
-  const quotes = [
-    {
-      id: "QUO-001",
-      title: "Spring Collection Quote",
-      opportunity: "OPP-001",
-      client: "Fashion Forward Inc",
-      status: "Draft",
-      totalValue: "$42,500",
-      items: 8,
-      lastModified: "2024-02-10",
-    },
-    {
-      id: "QUO-002",
-      title: "Organic Cotton Pricing",
-      opportunity: "OPP-002",
-      client: "EcoWear Brand",
-      status: "Sent",
-      totalValue: "$28,950",
-      items: 5,
-      lastModified: "2024-02-08",
-    },
-  ];
+  const { toast } = useToast();
+  const [validityDate, setValidityDate] = useState<Date>();
+  const [quoteLines, setQuoteLines] = useState<QuoteLine[]>(mockSelection.lines);
+  
+  const form = useForm({
+    defaultValues: {
+      deliveryTerms: "4-6 weeks from order confirmation",
+      incoterms: "FOB",
+      notes: ""
+    }
+  });
 
-  const currentQuote = {
+  // Calculate totals
+  const { subtotal, total } = useMemo(() => {
+    const subtotal = quoteLines.reduce((sum, line) => sum + (line.quantity * line.price), 0);
+    return {
+      subtotal,
+      total: subtotal // Could add taxes, shipping, etc. here
+    };
+  }, [quoteLines]);
+
+  // Check if quote is valid for sending
+  const canSendQuote = useMemo(() => {
+    return (
+      validityDate &&
+      quoteLines.length > 0 &&
+      quoteLines.every(line => line.quantity > 0 && line.price > 0) &&
+      form.getValues("deliveryTerms").trim() !== ""
+    );
+  }, [quoteLines, validityDate, form.watch()]);
+
+  const [quoteStatus, setQuoteStatus] = useState<Quote["status"]>("Draft");
+
+  // Current quote object for PDF generation
+  const currentQuote: Quote = {
     id: "QUO-001",
-    title: "Spring Collection Quote",
-    client: "Fashion Forward Inc",
-    items: [
-      {
-        id: 1,
-        description: "Organic Cotton Blend - Natural White",
-        fabric: "COT-001",
-        quantity: 500,
-        unit: "yards",
-        unitPrice: 12.50,
-        total: 6250,
-      },
-      {
-        id: 2,
-        description: "Silk Cotton Mix - Cream",
-        fabric: "SIL-002",
-        quantity: 300,
-        unit: "yards",
-        unitPrice: 18.75,
-        total: 5625,
-      },
-      {
-        id: 3,
-        description: "Premium Linen - Off White",
-        fabric: "LIN-003",
-        quantity: 200,
-        unit: "yards",
-        unitPrice: 24.00,
-        total: 4800,
-      },
-    ],
-    subtotal: 16675,
-    shipping: 850,
-    tax: 1502.25,
-    total: 19027.25,
+    selectionId: mockSelection.id,
+    lines: quoteLines,
+    validityDate: validityDate ? format(validityDate, "yyyy-MM-dd") : "",
+    deliveryTerms: form.getValues("deliveryTerms"),
+    incoterms: form.getValues("incoterms"),
+    total,
+    status: quoteStatus,
+    notes: form.getValues("notes"),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  const updateQuoteLine = (index: number, updates: Partial<QuoteLine>) => {
+    setQuoteLines(prev => prev.map((line, i) => 
+      i === index ? { ...line, ...updates } : line
+    ));
+  };
+
+  const handleSendQuote = () => {
+    if (!canSendQuote) {
+      toast({
+        title: "Validation Error",
+        description: "Please complete all required fields before sending the quote.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setQuoteStatus("Sent");
+    
+    console.log("QUOTE_SENT:", {
+      quoteId: currentQuote.id,
+      selectionId: currentQuote.selectionId,
+      total: currentQuote.total,
+      lines: currentQuote.lines.length,
+      timestamp: new Date().toISOString()
+    });
+
+    toast({
+      title: "Quote Sent",
+      description: `Quote #${currentQuote.id} has been sent successfully`,
+    });
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-6 py-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Quote Editor</h1>
-          <p className="text-muted-foreground mt-1">
-            Create and manage quotes for your textile sourcing opportunities
-          </p>
-        </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Quote
-        </Button>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Quote Editor</h1>
+        <p className="text-muted-foreground">
+          Create and manage quotes from selections • Selection: {mockSelection.name}
+        </p>
       </div>
 
-      <Tabs defaultValue="editor" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="editor">Quote Editor</TabsTrigger>
-          <TabsTrigger value="library">Quote Library</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="editor" className="space-y-6">
-          {/* Editor Header */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Quote Editor */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Quote Lines Table */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    {currentQuote.title}
-                  </CardTitle>
-                  <CardDescription>
-                    Quote for {currentQuote.client} • ID: {currentQuote.id}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Save className="h-4 w-4 mr-1" />
-                    Save Draft
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-1" />
-                    Preview
-                  </Button>
-                  <Button size="sm">
-                    <Send className="h-4 w-4 mr-1" />
-                    Send Quote
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Quote Items */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Quote Items</CardTitle>
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Item
-                </Button>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Quote Lines
+              </CardTitle>
+              <CardDescription>
+                Edit quantities, pricing, and specifications for each product
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Table Header */}
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
-                  <div className="col-span-4">Description</div>
-                  <div className="col-span-2">Quantity</div>
-                  <div className="col-span-2">Unit Price</div>
-                  <div className="col-span-2">Total</div>
-                  <div className="col-span-2">Actions</div>
-                </div>
-
-                {/* Quote Items */}
-                {currentQuote.items.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-4 items-center py-3 border-b border-muted/50">
-                    <div className="col-span-4">
-                      <p className="font-medium">{item.description}</p>
-                      <p className="text-sm text-muted-foreground">Fabric: {item.fabric}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p>{item.quantity} {item.unit}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p>${item.unitPrice.toFixed(2)}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="font-semibold">${item.total.toLocaleString()}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm">Edit</Button>
-                        <Button variant="outline" size="sm">Remove</Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Lab Dip</TableHead>
+                      <TableHead className="text-right">Line Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {quoteLines.map((line, index) => (
+                      <TableRow key={line.productId}>
+                        <TableCell className="font-medium">
+                          {line.name}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={line.quantity}
+                            onChange={(e) => updateQuoteLine(index, { 
+                              quantity: parseInt(e.target.value) || 0 
+                            })}
+                            className="w-24"
+                            min="0"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select 
+                            value={line.unit}
+                            onValueChange={(value) => updateQuoteLine(index, { unit: value })}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {unitOptions.map(unit => (
+                                <SelectItem key={unit} value={unit}>
+                                  {unit}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={line.price}
+                            onChange={(e) => updateQuoteLine(index, { 
+                              price: parseFloat(e.target.value) || 0 
+                            })}
+                            className="w-24"
+                            min="0"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={line.labDipRequired || false}
+                              onCheckedChange={(checked) => updateQuoteLine(index, { 
+                                labDipRequired: checked 
+                              })}
+                            />
+                            {line.labDipRequired && (
+                              <TestTube className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ${(line.quantity * line.price).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
 
-          {/* Quote Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Quote Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>${currentQuote.subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping:</span>
-                    <span>${currentQuote.shipping.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax:</span>
-                    <span>${currentQuote.tax.toLocaleString()}</span>
-                  </div>
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between text-lg font-semibold">
-                      <span>Total:</span>
-                      <span>${currentQuote.total.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quote Settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Valid Until</label>
-                    <input 
-                      type="date" 
-                      className="w-full mt-1 p-2 border rounded-lg bg-background"
-                      defaultValue="2024-03-15"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Payment Terms</label>
-                    <select className="w-full mt-1 p-2 border rounded-lg bg-background">
-                      <option>Net 30</option>
-                      <option>Net 60</option>
-                      <option>COD</option>
-                      <option>50% Advance, 50% on delivery</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Notes</label>
-                    <textarea 
-                      className="w-full mt-1 p-2 border rounded-lg bg-background h-20"
-                      placeholder="Additional notes or terms..."
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="library" className="space-y-6">
-          {/* Quote Library */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {quotes.map((quote) => (
-              <Card key={quote.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{quote.title}</CardTitle>
-                      <CardDescription className="mt-1">{quote.client}</CardDescription>
-                    </div>
-                    <Badge 
-                      variant={
-                        quote.status === "Sent" ? "default" : 
-                        quote.status === "Approved" ? "secondary" : "outline"
-                      }
-                    >
-                      {quote.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
+          {/* Global Quote Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quote Settings</CardTitle>
+              <CardDescription>
+                Configure delivery terms and validity
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Validity Date */}
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total Value:</span>
-                      <span className="font-semibold">{quote.totalValue}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Items:</span>
-                      <span>{quote.items}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Last Modified:</span>
-                      <span>{quote.lastModified}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">ID:</span>
-                      <span className="font-mono text-xs">{quote.id}</span>
-                    </div>
+                    <FormLabel>Validity Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !validityDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {validityDate ? format(validityDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={validityDate}
+                          onSelect={setValidityDate}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+
+                  {/* Incoterms */}
+                  <FormField
+                    control={form.control}
+                    name="incoterms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Incoterms</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select incoterms" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {incotermsOptions.map(term => (
+                              <SelectItem key={term} value={term}>
+                                {term}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <FormField
+                    control={form.control}
+                    name="deliveryTerms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Delivery Terms</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enter delivery terms and conditions"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Notes</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Add any additional notes or comments"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Summary Sidebar */}
+        <div className="space-y-6">
+          {/* Quote Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Quote Summary
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant={quoteStatus === "Sent" ? "default" : "secondary"}>
+                  {quoteStatus}
+                </Badge>
+                <Badge variant="outline">
+                  {quoteLines.length} line{quoteLines.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Line Items Summary */}
+              <div className="space-y-2">
+                {quoteLines.map((line, index) => (
+                  <div key={line.productId} className="flex justify-between text-sm">
+                    <span className="truncate mr-2">{line.name}</span>
+                    <span className="font-medium">
+                      ${(line.quantity * line.price).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <Separator />
+              
+              {/* Totals */}
+              <div className="space-y-2">
+                <div className="flex justify-between font-medium">
+                  <span>Subtotal</span>
+                  <span>${subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span>${total.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Lab Dips Summary */}
+              {quoteLines.some(line => line.labDipRequired) && (
+                <div className="text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <TestTube className="h-4 w-4" />
+                    Lab Dips Required
+                  </div>
+                  {quoteLines
+                    .filter(line => line.labDipRequired)
+                    .map(line => (
+                      <div key={line.productId} className="ml-6 text-xs">
+                        {line.name}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <QuotePDFButton
+                quote={currentQuote}
+                variant="outline"
+                onGenerated={(url) => console.log("PDF generated:", url)}
+              />
+              
+              <Button 
+                className="w-full" 
+                onClick={handleSendQuote}
+                disabled={!canSendQuote || quoteStatus === "Sent"}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {quoteStatus === "Sent" ? "Quote Sent" : "Send Quote"}
+              </Button>
+
+              {!canSendQuote && quoteStatus !== "Sent" && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Complete all required fields to send quote
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
