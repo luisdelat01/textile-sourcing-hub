@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StagePill } from "@/components/StagePill";
-import { Save } from "lucide-react";
+import { SpecChecklist, type SpecRecord, type SpecKey } from "@/components/SpecChecklist";
+import { Save, TrendingUp, Package, FileText, ShoppingCart } from "lucide-react";
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,35 @@ export default function OpportunityDetail() {
   };
 
   const [nextStep, setNextStep] = useState(mock.nextStep);
+
+  // Specs state management
+  const [specs, setSpecs] = useState<SpecRecord>({
+    fabricType: undefined,
+    weightGSM: undefined,
+    color: undefined,
+    MOQ: undefined,
+    deliveryWindow: undefined,
+    certifications: [],
+    priceTarget: undefined,
+    handFeelNotes: ""
+  });
+
+  // Mock metrics
+  const metrics = {
+    missingSpecs: Object.values(specs).filter(value => 
+      value === undefined || 
+      value === "" || 
+      (Array.isArray(value) && value.length === 0)
+    ).length,
+    activeSamples: 3,
+    openQuotes: 2,
+    openPOs: 1
+  };
+
+  const handleSpecConfirm = (key: SpecKey, value: any) => {
+    setSpecs(prev => ({ ...prev, [key]: value }));
+    console.log(`SPEC_FIELD_CONFIRMED: ${key}`, value);
+  };
 
   const handleSaveNextStep = () => {
     console.log("Saving next step:", nextStep);
@@ -100,21 +130,65 @@ export default function OpportunityDetail() {
           </TabsList>
 
           <TabsContent value="overview">
-            <Card>
-              <CardHeader>
-                <CardTitle>Overview</CardTitle>
-                <CardDescription>
-                  General information about this opportunity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor 
-                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud 
-                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid gap-6">
+              {/* Metrics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Missing Specs</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.missingSpecs}</div>
+                    <p className="text-xs text-muted-foreground">
+                      specifications pending
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Samples</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.activeSamples}</div>
+                    <p className="text-xs text-muted-foreground">
+                      samples in progress
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Open Quotes</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.openQuotes}</div>
+                    <p className="text-xs text-muted-foreground">
+                      awaiting response
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Open POs</CardTitle>
+                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metrics.openPOs}</div>
+                    <p className="text-xs text-muted-foreground">
+                      in fulfillment
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Spec Checklist */}
+              <SpecChecklist specs={specs} onConfirm={handleSpecConfirm} />
+            </div>
           </TabsContent>
 
           <TabsContent value="selections">
