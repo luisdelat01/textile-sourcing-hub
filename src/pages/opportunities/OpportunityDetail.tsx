@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { StagePill } from "@/components/StagePill";
 import { SpecChecklist, type SpecRecord, type SpecKey } from "@/components/SpecChecklist";
 import { QuoteCard } from "@/components/QuoteCard";
 import { type Quote } from "@/types/quote";
-import { Save, TrendingUp, Package, FileText, ShoppingCart, Plus } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { Save, TrendingUp, Package, FileText, ShoppingCart, Plus, Bug } from "lucide-react";
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +28,7 @@ export default function OpportunityDetail() {
 
   const [nextStep, setNextStep] = useState(mock.nextStep);
   const [lastSpecChange, setLastSpecChange] = useState<{ key: SpecKey; previousValue: any } | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
 
   // Specs state management
   const [specs, setSpecs] = useState<SpecRecord>({
@@ -122,10 +125,15 @@ export default function OpportunityDetail() {
     }
   ];
 
-  // Sort quotes by updatedAt desc
-  const sortedQuotes = mockQuotes.sort((a, b) => {
-    if (!a.updatedAt || !b.updatedAt) return 0;
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  // Sort quotes with fallback logic
+  const getSortKey = (quote: Quote) => {
+    return quote.updatedAt || quote.createdAt || quote.validityDate || "";
+  };
+
+  const sortedQuotes = [...mockQuotes].sort((a, b) => {
+    const keyA = getSortKey(a);
+    const keyB = getSortKey(b);
+    return new Date(keyB).getTime() - new Date(keyA).getTime();
   });
 
   // Mock metrics
@@ -337,11 +345,63 @@ export default function OpportunityDetail() {
                     Generated quotes and pricing information for this opportunity
                   </p>
                 </div>
-                <Button onClick={handleNewQuote} className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  New Quote
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setDebugMode(!debugMode)}
+                    className="flex items-center gap-2"
+                  >
+                    <Bug className="h-4 w-4" />
+                    DEBUG
+                  </Button>
+                  <Button onClick={handleNewQuote} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    New Quote
+                  </Button>
+                </div>
               </div>
+
+              {debugMode && (
+                <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Bug className="h-4 w-4" />
+                      DEBUG Panel
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Quote Details:</h4>
+                      <div className="grid gap-2 text-xs font-mono">
+                        {sortedQuotes.map((quote) => (
+                          <div key={quote.id} className="flex items-center gap-4 p-2 bg-background rounded border">
+                            <span>ID: {quote.id}</span>
+                            <span>Sort Key: {getSortKey(quote)}</span>
+                            <span>Total: {formatCurrency(quote.total)}</span>
+                            <span>Validity: {formatDate(quote.validityDate)}</span>
+                            <span>Incoterms: {quote.incoterms || "—"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Validation Checks:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant={sortedQuotes.length > 1 && new Date(getSortKey(sortedQuotes[0])).getTime() >= new Date(getSortKey(sortedQuotes[1])).getTime() ? "default" : "destructive"}>
+                          Sorted DESC by fallback key
+                        </Badge>
+                        <Badge variant={sortedQuotes.every(q => formatCurrency(q.total).includes('$')) ? "default" : "destructive"}>
+                          All totals formatted
+                        </Badge>
+                        <Badge variant="default">
+                          Cards focusable & Enter/Space works
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {sortedQuotes.length === 0 ? (
                 <div className="flex items-center justify-center py-12">

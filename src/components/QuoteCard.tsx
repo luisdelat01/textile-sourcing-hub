@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Truck, FileText, TestTube } from "lucide-react";
 import { Quote } from "@/types/quote";
-import { formatCurrency, formatDate } from "@/lib/formatters";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface QuoteCardProps {
   quote: Quote;
@@ -14,7 +14,7 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
   
   return (
     <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
+      className="hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" 
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -63,11 +63,9 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
 
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center gap-2">
-            {quote.incoterms && (
-              <Badge variant="outline" className="text-xs">
-                {quote.incoterms}
-              </Badge>
-            )}
+            <Badge variant="outline" className="text-xs">
+              {quote.incoterms || <span className="text-muted-foreground">—</span>}
+            </Badge>
             {hasLabDips && (
               <Badge variant="outline" className="text-xs flex items-center gap-1">
                 <TestTube className="h-3 w-3" />
