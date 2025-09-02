@@ -1,202 +1,213 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, DollarSign, User, FileText, MessageSquare, Clock } from "lucide-react";
+import { StagePill } from "@/components/StagePill";
+import { Save } from "lucide-react";
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
 
-  // Mock data - in real app this would come from API
-  const opportunity = {
-    id: id || "OPP-001",
-    title: "Spring Collection Fabrics",
-    client: "Fashion Forward Inc",
-    status: "Active",
-    deadline: "2024-03-15",
-    value: "$45,000",
-    description: "Sourcing high-quality cotton and silk blends for the upcoming spring collection. Requirements include sustainable sourcing practices and GOTS certification.",
-    requirements: [
-      "100% organic cotton base",
-      "GOTS certified materials",
-      "Minimum 50 GSM weight",
-      "Color-fast dyes",
-      "Sample approval required"
-    ],
-    timeline: [
-      { date: "2024-01-15", event: "Opportunity created", status: "completed" },
-      { date: "2024-01-20", event: "Initial supplier outreach", status: "completed" },
-      { date: "2024-02-01", event: "Sample requests sent", status: "completed" },
-      { date: "2024-02-15", event: "Sample review and approval", status: "in-progress" },
-      { date: "2024-03-01", event: "Final quote preparation", status: "pending" },
-      { date: "2024-03-15", event: "Final submission", status: "pending" },
-    ]
+  // Mock data
+  const mock = {
+    name: "FW26 Development",
+    company: "Tintex",
+    brand: "Fleur de Mal",
+    contactEmail: "dev@client.com",
+    stage: "Clarify Buyer Intent" as const,
+    nextStep: "Confirm MOQ and delivery window"
+  };
+
+  const [nextStep, setNextStep] = useState(mock.nextStep);
+
+  const handleSaveNextStep = () => {
+    console.log("Saving next step:", nextStep);
+    // No persistence for now
+  };
+
+  const handleCreateSelection = () => {
+    console.log("Create Selection clicked");
+  };
+
+  const handleGenerateQuote = () => {
+    console.log("Generate Quote clicked");
+  };
+
+  const handleUploadPO = () => {
+    console.log("Upload PO clicked");
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-foreground">{opportunity.title}</h1>
-            <Badge variant={opportunity.status === "Active" ? "default" : "secondary"}>
-              {opportunity.status}
-            </Badge>
+    <div className="min-h-screen bg-background">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-6">
+            {/* Left Block */}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-semibold text-foreground mb-1">
+                {mock.name}
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {mock.company} • {mock.brand} • {mock.contactEmail}
+              </p>
+            </div>
+
+            {/* Center Block */}
+            <div className="flex items-center gap-4">
+              <StagePill stage={mock.stage} />
+              <div className="flex items-center gap-2">
+                <Input
+                  value={nextStep}
+                  onChange={(e) => setNextStep(e.target.value)}
+                  placeholder="Next step..."
+                  className="w-64"
+                />
+                <Button size="sm" onClick={handleSaveNextStep}>
+                  <Save className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Right Block */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleCreateSelection}>
+                Create Selection
+              </Button>
+              <Button variant="outline" onClick={handleGenerateQuote}>
+                Generate Quote
+              </Button>
+              <Button onClick={handleUploadPO}>
+                Upload PO
+              </Button>
+            </div>
           </div>
-          <p className="text-muted-foreground">ID: {opportunity.id}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">Edit</Button>
-          <Button>Create Quote</Button>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <User className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Client</p>
-                <p className="font-semibold">{opportunity.client}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <DollarSign className="h-8 w-8 text-success" />
-              <div>
-                <p className="text-sm text-muted-foreground">Value</p>
-                <p className="font-semibold">{opportunity.value}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-warning" />
-              <div>
-                <p className="text-sm text-muted-foreground">Deadline</p>
-                <p className="font-semibold">{opportunity.deadline}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">Days Left</p>
-                <p className="font-semibold">23 days</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="selections">Selections</TabsTrigger>
+            <TabsTrigger value="quotes">Quotes</TabsTrigger>
+            <TabsTrigger value="pos">POs</TabsTrigger>
+            <TabsTrigger value="lab-dips">Lab Dips</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
+            <Card>
+              <CardHeader>
+                <CardTitle>Overview</CardTitle>
+                <CardDescription>
+                  General information about this opportunity
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor 
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud 
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="selections">
+            <Card>
+              <CardHeader>
+                <CardTitle>Selections</CardTitle>
+                <CardDescription>
+                  Fabric and material selections for this opportunity
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
+                  eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, 
+                  sunt in culpa qui officia deserunt mollit anim id est laborum.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="quotes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quotes</CardTitle>
+                <CardDescription>
+                  Generated quotes and pricing information
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium 
+                  doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore 
+                  veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pos">
+            <Card>
+              <CardHeader>
+                <CardTitle>Purchase Orders</CardTitle>
+                <CardDescription>
+                  Purchase orders and fulfillment tracking
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, 
+                  sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. 
+                  Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="lab-dips">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lab Dips</CardTitle>
+                <CardDescription>
+                  Color matching and lab dip approvals
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit 
+                  laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure 
+                  reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="timeline">
+            <Card>
+              <CardHeader>
+                <CardTitle>Timeline</CardTitle>
+                <CardDescription>
+                  Project timeline and milestone tracking
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis 
+                  praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias 
+                  excepturi sint occaecati cupiditate non provident, similique sunt in culpa.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="requirements">Requirements</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-foreground leading-relaxed">{opportunity.description}</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="requirements">
-          <Card>
-            <CardHeader>
-              <CardTitle>Technical Requirements</CardTitle>
-              <CardDescription>
-                Detailed specifications for this sourcing opportunity
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {opportunity.requirements.map((requirement, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                    <span>{requirement}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="timeline">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Timeline</CardTitle>
-              <CardDescription>
-                Track progress and upcoming milestones
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {opportunity.timeline.map((item, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className={`w-3 h-3 rounded-full ${
-                      item.status === 'completed' ? 'bg-success' :
-                      item.status === 'in-progress' ? 'bg-warning' : 'bg-muted'
-                    }`} />
-                    <div className="flex-1">
-                      <p className="font-medium">{item.event}</p>
-                      <p className="text-sm text-muted-foreground">{item.date}</p>
-                    </div>
-                    <Badge variant={
-                      item.status === 'completed' ? 'default' :
-                      item.status === 'in-progress' ? 'secondary' : 'outline'
-                    }>
-                      {item.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents & Files</CardTitle>
-              <CardDescription>
-                Attachments and related documents
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted rounded-lg">
-                <div className="text-center">
-                  <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">No documents uploaded yet</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
