@@ -1,288 +1,552 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, Clock, AlertTriangle, FileCheck, Truck, Package } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Upload, FileText, AlertTriangle, CheckCircle, Calendar as CalendarIcon, Send } from "lucide-react";
+import { Quote } from "@/types/quote";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+
+interface POField {
+  poNumber: string;
+  date: Date | undefined;
+  totalQuantity: number;
+  totalPrice: number;
+  deliveryTerms: string;
+}
+
+interface LabDipRecord {
+  id: string;
+  article: string;
+  colorRef: string;
+  status: "Requested" | "In Progress" | "Completed";
+}
 
 export default function POReview() {
-  const purchaseOrders = [
-    {
-      id: "PO-2024-001",
-      supplier: "Premium Textiles Ltd",
-      quote: "QUO-001",
-      value: "$42,500",
-      status: "Pending Review",
-      items: 8,
-      deliveryDate: "2024-04-15",
-      createdDate: "2024-02-10",
-    },
-    {
-      id: "PO-2024-002",
-      supplier: "EcoFiber Solutions",
-      quote: "QUO-002",
-      value: "$28,950",
-      status: "Approved",
-      items: 5,
-      deliveryDate: "2024-03-30",
-      createdDate: "2024-02-08",
-    },
-    {
-      id: "PO-2024-003",
-      supplier: "Organic Cotton Co",
-      quote: "QUO-003",
-      value: "$15,750",
-      status: "In Transit",
-      items: 3,
-      deliveryDate: "2024-03-20",
-      createdDate: "2024-01-25",
-    },
-  ];
+  const { toast } = useToast();
+  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [tolerance, setTolerance] = useState(2);
+  const [clarificationOpen, setClarificationOpen] = useState(false);
+  const [clarificationMessage, setClarificationMessage] = useState("");
+  const [poFields, setPOFields] = useState<POField>({
+    poNumber: "",
+    date: undefined,
+    totalQuantity: 0,
+    totalPrice: 0,
+    deliveryTerms: ""
+  });
 
-  const reviewChecklist = [
-    { item: "Supplier credentials verified", status: "completed" },
-    { item: "Quality specifications confirmed", status: "completed" },
-    { item: "Delivery terms agreed", status: "completed" },
-    { item: "Payment terms finalized", status: "in-progress" },
-    { item: "Compliance documentation", status: "pending" },
-    { item: "Insurance coverage verified", status: "pending" },
-  ];
+  // Mock latest sent quote
+  const latestSentQuote: Quote | null = {
+    id: "Q-002",
+    selectionId: "S-001", 
+    lines: [
+      {
+        productId: "P-003",
+        name: "Linen Blend 140GSM",
+        unit: "meters",
+        quantity: 800,
+        price: 8.90,
+        labDipRequired: true
+      },
+      {
+        productId: "P-004",
+        name: "Cotton Poplin 120GSM",
+        unit: "meters",
+        quantity: 500,
+        price: 4.50,
+        labDipRequired: false
+      }
+    ],
+    validityDate: "2024-09-30",
+    deliveryTerms: "3-4 weeks from order confirmation",
+    incoterms: "EXW",
+    total: 9370,
+    status: "Sent",
+    createdAt: "2024-08-28T09:15:00Z",
+    updatedAt: "2024-08-30T16:45:00Z"
+  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Pending Review":
-        return <Clock className="h-4 w-4" />;
-      case "Approved":
-        return <CheckCircle className="h-4 w-4" />;
-      case "In Transit":
-        return <Truck className="h-4 w-4" />;
-      default:
-        return <Package className="h-4 w-4" />;
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(`fake-url://${file.name}`);
+      // Mock OCR extraction
+      setPOFields({
+        poNumber: "PO-2024-" + Math.floor(Math.random() * 1000),
+        date: new Date(),
+        totalQuantity: 1300,
+        totalPrice: 9500,
+        deliveryTerms: "4-5 weeks from order confirmation"
+      });
+      toast({
+        title: "File uploaded",
+        description: `${file.name} processed successfully`
+      });
     }
   };
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "Approved":
-        return "default";
-      case "In Transit":
-        return "secondary";
-      case "Pending Review":
-        return "outline";
-      default:
-        return "outline";
+  const calculateDiff = (poValue: number, quoteValue: number) => {
+    const absoluteDiff = poValue - quoteValue;
+    const percentageDiff = quoteValue !== 0 ? Math.abs((absoluteDiff / quoteValue) * 100) : 0;
+    return { absoluteDiff, percentageDiff };
+  };
+
+  const getComparisonData = () => {
+    if (!latestSentQuote) return [];
+    
+    const quoteQuantity = latestSentQuote.lines.reduce((sum, line) => sum + line.quantity, 0);
+    const quoteTotalPrice = latestSentQuote.total;
+
+    return [
+      {
+        field: "Total Quantity",
+        poValue: poFields.totalQuantity.toString(),
+        quoteValue: quoteQuantity.toString(),
+        diff: calculateDiff(poFields.totalQuantity, quoteQuantity)
+      },
+      {
+        field: "Total Price",
+        poValue: formatCurrency(poFields.totalPrice),
+        quoteValue: formatCurrency(quoteTotalPrice),
+        diff: calculateDiff(poFields.totalPrice, quoteTotalPrice)
+      },
+      {
+        field: "Delivery Terms",
+        poValue: poFields.deliveryTerms,
+        quoteValue: latestSentQuote.deliveryTerms,
+        diff: null
+      }
+    ];
+  };
+
+  const getLineItemComparison = () => {
+    if (!latestSentQuote) return [];
+    return latestSentQuote.lines.map(line => ({
+      product: line.name,
+      quoteQty: line.quantity,
+      quotePrice: line.price,
+      poQty: Math.floor(line.quantity * (1 + (Math.random() - 0.5) * 0.1)), // Mock variation
+      poPrice: line.price * (1 + (Math.random() - 0.5) * 0.05) // Mock variation
+    }));
+  };
+
+  const hasToleranceViolations = () => {
+    const comparisonData = getComparisonData();
+    const lineItems = getLineItemComparison();
+    
+    const fieldViolations = comparisonData.some(item => 
+      item.diff && item.diff.percentageDiff > tolerance
+    );
+    
+    const lineViolations = lineItems.some(item => {
+      const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
+      const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
+      return qtyDiff > tolerance || priceDiff > tolerance;
+    });
+
+    return fieldViolations || lineViolations;
+  };
+
+  const getViolationItems = () => {
+    const violations = [];
+    const comparisonData = getComparisonData();
+    const lineItems = getLineItemComparison();
+    
+    comparisonData.forEach(item => {
+      if (item.diff && item.diff.percentageDiff > tolerance) {
+        violations.push(`${item.field}: ${item.diff.percentageDiff.toFixed(1)}% difference`);
+      }
+    });
+    
+    lineItems.forEach(item => {
+      const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
+      const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
+      
+      if (qtyDiff > tolerance) {
+        violations.push(`${item.product} quantity: ${qtyDiff.toFixed(1)}% difference`);
+      }
+      if (priceDiff > tolerance) {
+        violations.push(`${item.product} price: ${priceDiff.toFixed(1)}% difference`);
+      }
+    });
+
+    return violations;
+  };
+
+  const handleConfirmPO = () => {
+    console.log("PO_CONFIRMED", poFields);
+    toast({
+      title: "PO Confirmed",
+      description: `Purchase Order ${poFields.poNumber} has been confirmed successfully`
+    });
+
+    // Create lab dip records if needed
+    if (latestSentQuote?.lines.some(line => line.labDipRequired)) {
+      const labDips: LabDipRecord[] = latestSentQuote.lines
+        .filter(line => line.labDipRequired)
+        .map(line => ({
+          id: `LD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          article: line.name,
+          colorRef: "TBD",
+          status: "Requested"
+        }));
+      
+      console.log("LAB_DIP_SENT (stub)", labDips);
+      toast({
+        title: "Lab Dips Requested",
+        description: `${labDips.length} lab dip requests have been sent`
+      });
     }
+  };
+
+  const handleClarificationSubmit = () => {
+    console.log("CLARIFICATION_REQUESTED:", clarificationMessage);
+    toast({
+      title: "Clarification Requested",
+      description: "Your message has been sent to the client"
+    });
+    setClarificationMessage("");
+    setClarificationOpen(false);
   };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">PO Review</h1>
-          <p className="text-muted-foreground mt-1">
-            Review and manage purchase orders for approved quotes
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">PO Review</h1>
+        <p className="text-muted-foreground mt-1">
+          Upload and review client purchase orders against sent quotes
+        </p>
       </div>
 
-      <Tabs defaultValue="review" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="review">Current Review</TabsTrigger>
-          <TabsTrigger value="orders">All Orders</TabsTrigger>
-          <TabsTrigger value="tracking">Order Tracking</TabsTrigger>
-        </TabsList>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Upload Client PO */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Upload Client PO
+            </CardTitle>
+            <CardDescription>
+              Upload the client's purchase order for processing and comparison
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!uploadedFile ? (
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No file uploaded yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Drag and drop your PO file here, or click to browse
+                </p>
+                <Input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.png"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <Label htmlFor="file-upload" className="cursor-pointer">
+                  <Button variant="outline" className="pointer-events-none">
+                    Choose File
+                  </Button>
+                </Label>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm font-medium">{uploadedFile.split('//')[1]}</span>
+                  <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setUploadedFile(null)}
+                  className="w-full"
+                >
+                  Upload Different File
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="review" className="space-y-6">
-          {/* Current PO Being Reviewed */}
+        {/* Right: Extracted Fields */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Extracted Fields</CardTitle>
+            <CardDescription>
+              Review and edit the extracted information from the PO
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!uploadedFile ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Upload a PO file to see extracted fields
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="poNumber">PO Number</Label>
+                  <Input
+                    id="poNumber"
+                    value={poFields.poNumber}
+                    onChange={(e) => setPOFields(prev => ({ ...prev, poNumber: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !poFields.date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {poFields.date ? format(poFields.date, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={poFields.date}
+                        onSelect={(date) => setPOFields(prev => ({ ...prev, date }))}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="totalQuantity">Total Quantity</Label>
+                  <Input
+                    id="totalQuantity"
+                    type="number"
+                    value={poFields.totalQuantity}
+                    onChange={(e) => setPOFields(prev => ({ ...prev, totalQuantity: Number(e.target.value) }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="totalPrice">Total Price</Label>
+                  <Input
+                    id="totalPrice"
+                    type="number"
+                    step="0.01"
+                    value={poFields.totalPrice}
+                    onChange={(e) => setPOFields(prev => ({ ...prev, totalPrice: Number(e.target.value) }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="deliveryTerms">Delivery Terms</Label>
+                  <Input
+                    id="deliveryTerms"
+                    value={poFields.deliveryTerms}
+                    onChange={(e) => setPOFields(prev => ({ ...prev, deliveryTerms: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Comparison vs Latest Quote */}
+      {uploadedFile && latestSentQuote && (
+        <div className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileCheck className="h-5 w-5" />
-                    PO-2024-001 Review
-                  </CardTitle>
-                  <CardDescription>
-                    Premium Textiles Ltd • Spring Collection Quote
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline">Request Changes</Button>
-                  <Button>Approve PO</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-2">Order Details</h4>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Value:</span> $42,500</p>
-                    <p><span className="text-muted-foreground">Items:</span> 8 fabric types</p>
-                    <p><span className="text-muted-foreground">Delivery:</span> April 15, 2024</p>
-                    <p><span className="text-muted-foreground">Payment:</span> Net 30</p>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Supplier Info</h4>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Company:</span> Premium Textiles Ltd</p>
-                    <p><span className="text-muted-foreground">Contact:</span> Sarah Johnson</p>
-                    <p><span className="text-muted-foreground">Rating:</span> ⭐⭐⭐⭐⭐ (4.8/5)</p>
-                    <p><span className="text-muted-foreground">Certification:</span> GOTS, OEKO-TEX</p>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Quality Metrics</h4>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">On-time delivery:</span> 94%</p>
-                    <p><span className="text-muted-foreground">Quality score:</span> 4.7/5</p>
-                    <p><span className="text-muted-foreground">Defect rate:</span> &lt;0.5%</p>
-                    <p><span className="text-muted-foreground">Past orders:</span> 23 completed</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Review Checklist */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Review Checklist</CardTitle>
+              <CardTitle>Comparison vs Latest Sent Quote</CardTitle>
               <CardDescription>
-                Complete all items before approving the purchase order
+                Compare PO values against Quote {latestSentQuote.id}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {reviewChecklist.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      item.status === 'completed' ? 'bg-success' :
-                      item.status === 'in-progress' ? 'bg-warning' : 'bg-muted'
-                    }`} />
-                    <span className={`flex-1 ${
-                      item.status === 'completed' ? 'text-muted-foreground line-through' : ''
-                    }`}>
-                      {item.item}
-                    </span>
-                    {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-success" />}
-                    {item.status === 'in-progress' && <Clock className="h-4 w-4 text-warning" />}
-                    {item.status === 'pending' && <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                ))}
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Field</TableHead>
+                    <TableHead>PO Value</TableHead>
+                    <TableHead>Quote Value</TableHead>
+                    <TableHead>Difference</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getComparisonData().map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{item.field}</TableCell>
+                      <TableCell>{item.poValue}</TableCell>
+                      <TableCell>{item.quoteValue}</TableCell>
+                      <TableCell>
+                        {item.diff ? (
+                          <div className="flex items-center gap-2">
+                            <span>{formatCurrency(item.diff.absoluteDiff)}</span>
+                            <Badge variant={item.diff.percentageDiff > tolerance ? "destructive" : "secondary"}>
+                              {item.diff.percentageDiff.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="orders" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {purchaseOrders.map((po) => (
-              <Card key={po.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {getStatusIcon(po.status)}
-                        {po.id}
-                      </CardTitle>
-                      <CardDescription className="mt-1">{po.supplier}</CardDescription>
-                    </div>
-                    <Badge variant={getStatusVariant(po.status)}>
-                      {po.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Value:</span>
-                      <span className="font-semibold">{po.value}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Items:</span>
-                      <span>{po.items}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Delivery:</span>
-                      <span>{po.deliveryDate}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Created:</span>
-                      <span>{po.createdDate}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tracking" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Order Tracking</CardTitle>
-              <CardDescription>
-                Track the status of approved purchase orders
-              </CardDescription>
+              <CardTitle>Line Items Comparison</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {/* Sample tracking for PO-2024-003 */}
-                <div className="border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-semibold">PO-2024-003 - Organic Cotton Co</h4>
-                    <Badge variant="secondary">In Transit</Badge>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-3 h-3 bg-success rounded-full" />
-                      <div className="flex-1">
-                        <p className="font-medium">Order Confirmed</p>
-                        <p className="text-sm text-muted-foreground">January 25, 2024</p>
-                      </div>
-                    </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Qty (PO vs Quote)</TableHead>
+                    <TableHead>Price (PO vs Quote)</TableHead>
+                    <TableHead>Diff</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getLineItemComparison().map((item, index) => {
+                    const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
+                    const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
                     
-                    <div className="flex items-center gap-4">
-                      <div className="w-3 h-3 bg-success rounded-full" />
-                      <div className="flex-1">
-                        <p className="font-medium">Production Started</p>
-                        <p className="text-sm text-muted-foreground">February 1, 2024</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-3 h-3 bg-success rounded-full" />
-                      <div className="flex-1">
-                        <p className="font-medium">Quality Check Passed</p>
-                        <p className="text-sm text-muted-foreground">February 28, 2024</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-3 h-3 bg-warning rounded-full" />
-                      <div className="flex-1">
-                        <p className="font-medium">Shipped</p>
-                        <p className="text-sm text-muted-foreground">March 5, 2024 • Tracking: TRK123456789</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-3 h-3 bg-muted rounded-full" />
-                      <div className="flex-1">
-                        <p className="font-medium text-muted-foreground">Expected Delivery</p>
-                        <p className="text-sm text-muted-foreground">March 20, 2024</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{item.product}</TableCell>
+                        <TableCell>{item.poQty} vs {item.quoteQty}</TableCell>
+                        <TableCell>{formatCurrency(item.poPrice)} vs {formatCurrency(item.quotePrice)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Badge variant={qtyDiff > tolerance ? "destructive" : "secondary"} className="text-xs">
+                              Qty: {qtyDiff.toFixed(1)}%
+                            </Badge>
+                            <Badge variant={priceDiff > tolerance ? "destructive" : "secondary"} className="text-xs">
+                              Price: {priceDiff.toFixed(1)}%
+                            </Badge>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
+
+      {/* Tolerance Gate */}
+      {uploadedFile && latestSentQuote && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tolerance & Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Label htmlFor="tolerance">Tolerance (%)</Label>
+              <Input
+                id="tolerance"
+                type="number"
+                step="0.1"
+                value={tolerance}
+                onChange={(e) => setTolerance(Number(e.target.value))}
+                className="w-24"
+              />
+            </div>
+
+            {hasToleranceViolations() && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  The following items exceed the tolerance threshold:
+                  <ul className="mt-2 ml-4 list-disc">
+                    {getViolationItems().map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex gap-4">
+              <Dialog open={clarificationOpen} onOpenChange={setClarificationOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    Request Clarification
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Request Clarification</DialogTitle>
+                    <DialogDescription>
+                      Send a message to the client regarding the PO discrepancies
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Textarea
+                    placeholder="Please provide clarification on the following items..."
+                    value={clarificationMessage}
+                    onChange={(e) => setClarificationMessage(e.target.value)}
+                    rows={4}
+                  />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setClarificationOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleClarificationSubmit}>
+                      Send Message
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Button
+                onClick={handleConfirmPO}
+                disabled={hasToleranceViolations()}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Confirm PO
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No Quote State */}
+      {uploadedFile && !latestSentQuote && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Sent Quote Found</h3>
+            <p className="text-muted-foreground">
+              No sent quotes available for comparison with this PO
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
