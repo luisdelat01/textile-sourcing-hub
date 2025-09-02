@@ -14,7 +14,7 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
   
   return (
     <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" 
+      className="hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -56,7 +56,7 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
             <Truck className="h-4 w-4 text-muted-foreground" />
             <div>
               <div className="text-muted-foreground">Delivery</div>
-              <div className="font-medium truncate">{quote.deliveryTerms}</div>
+              <div className="font-medium truncate" title={quote.deliveryTerms}>{quote.deliveryTerms}</div>
             </div>
           </div>
         </div>

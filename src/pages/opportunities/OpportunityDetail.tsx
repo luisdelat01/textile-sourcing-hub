@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { StagePill } from "@/components/StagePill";
+import { StagePill, type StageType } from "@/components/StagePill";
 import { SpecChecklist, type SpecRecord, type SpecKey } from "@/components/SpecChecklist";
 import { QuoteCard } from "@/components/QuoteCard";
 import { type Quote } from "@/types/quote";
@@ -22,7 +22,7 @@ export default function OpportunityDetail() {
     company: "Tintex",
     brand: "Fleur de Mal",
     contactEmail: "dev@client.com",
-    stage: "Clarify Buyer Intent" as const,
+    stage: "Clarify Buyer Intent" as StageType,
     nextStep: "Confirm MOQ and delivery window"
   };
 
@@ -127,14 +127,16 @@ export default function OpportunityDetail() {
 
   // Sort quotes with fallback logic
   const getSortKey = (quote: Quote) => {
-    return quote.updatedAt || quote.createdAt || quote.validityDate || "";
+    return quote.updatedAt || quote.createdAt || quote.validityDate || "1970-01-01T00:00:00Z";
   };
 
-  const sortedQuotes = [...mockQuotes].sort((a, b) => {
-    const keyA = getSortKey(a);
-    const keyB = getSortKey(b);
-    return new Date(keyB).getTime() - new Date(keyA).getTime();
-  });
+  const sortedQuotes = useMemo(() => 
+    [...mockQuotes].sort((a, b) => {
+      const keyA = getSortKey(a);
+      const keyB = getSortKey(b);
+      return new Date(keyB).getTime() - new Date(keyA).getTime();
+    }), [mockQuotes]
+  );
 
   // Mock metrics
   const metrics = {
@@ -262,7 +264,7 @@ export default function OpportunityDetail() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{metrics.missingSpecs}</div>
+                    <div className="text-2xl font-bold" aria-live="polite">{metrics.missingSpecs}</div>
                     <p className="text-xs text-muted-foreground">
                       specifications pending
                     </p>
@@ -391,8 +393,11 @@ export default function OpportunityDetail() {
                         <Badge variant={sortedQuotes.length > 1 && new Date(getSortKey(sortedQuotes[0])).getTime() >= new Date(getSortKey(sortedQuotes[1])).getTime() ? "default" : "destructive"}>
                           Sorted DESC by fallback key
                         </Badge>
-                        <Badge variant={sortedQuotes.every(q => formatCurrency(q.total).includes('$')) ? "default" : "destructive"}>
+                        <Badge variant={sortedQuotes.every(q => formatCurrency(q.total) !== String(q.total)) ? "default" : "destructive"}>
                           All totals formatted
+                        </Badge>
+                        <Badge variant={sortedQuotes.every(q => !q.incoterms || ["EXW","FOB","CIF","DAP","DDP"].includes(q.incoterms)) ? "default" : "destructive"}>
+                          Valid incoterms
                         </Badge>
                         <Badge variant="default">
                           Cards focusable & Enter/Space works

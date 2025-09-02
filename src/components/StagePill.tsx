@@ -20,6 +20,8 @@ type StageType =
   | "Ready to Ship"
   | "Closed – Delivered";
 
+export type { StageType };
+
 interface StagePillProps {
   stage: StageType;
 }
