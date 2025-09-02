@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StagePill } from "@/components/StagePill";
 import { SpecChecklist, type SpecRecord, type SpecKey } from "@/components/SpecChecklist";
-import { Save, TrendingUp, Package, FileText, ShoppingCart } from "lucide-react";
+import { QuoteCard } from "@/components/QuoteCard";
+import { type Quote } from "@/types/quote";
+import { Save, TrendingUp, Package, FileText, ShoppingCart, Plus } from "lucide-react";
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   // Mock data
   const mock = {
@@ -35,6 +38,89 @@ export default function OpportunityDetail() {
     priceTarget: undefined,
     handFeelNotes: ""
   });
+
+  // Mock quotes data
+  const mockQuotes: Quote[] = [
+    {
+      id: "Q-001",
+      selectionId: "S-001",
+      lines: [
+        {
+          productId: "P-001",
+          name: "Cotton Poplin 120GSM",
+          unit: "meters",
+          quantity: 1000,
+          price: 4.50,
+          labDipRequired: true
+        },
+        {
+          productId: "P-002", 
+          name: "Organic Cotton Jersey 160GSM",
+          unit: "meters",
+          quantity: 500,
+          price: 6.20,
+          labDipRequired: true
+        }
+      ],
+      validityDate: "2024-10-15",
+      deliveryTerms: "4-6 weeks from order confirmation",
+      incoterms: "FOB Shanghai",
+      total: 7600,
+      status: "Draft",
+      createdAt: new Date("2024-09-01"),
+      updatedAt: new Date("2024-09-01")
+    },
+    {
+      id: "Q-002",
+      selectionId: "S-001", 
+      lines: [
+        {
+          productId: "P-003",
+          name: "Linen Blend 140GSM",
+          unit: "meters",
+          quantity: 800,
+          price: 8.90,
+          labDipRequired: false
+        }
+      ],
+      validityDate: "2024-09-30",
+      deliveryTerms: "3-4 weeks from order confirmation",
+      incoterms: "EXW Guangzhou",
+      total: 7120,
+      status: "Sent",
+      createdAt: new Date("2024-08-28"),
+      updatedAt: new Date("2024-08-30")
+    },
+    {
+      id: "Q-003",
+      selectionId: "S-002",
+      lines: [
+        {
+          productId: "P-004",
+          name: "Bamboo Terry 180GSM",
+          unit: "meters", 
+          quantity: 1200,
+          price: 5.75,
+          labDipRequired: true
+        },
+        {
+          productId: "P-005",
+          name: "Modal Spandex 200GSM",
+          unit: "meters",
+          quantity: 600,
+          price: 7.80,
+          labDipRequired: false
+        }
+      ],
+      validityDate: "2024-11-01",
+      deliveryTerms: "5-7 weeks from order confirmation", 
+      incoterms: "CIF Los Angeles",
+      total: 11580,
+      status: "Draft",
+      createdAt: new Date("2024-09-02"),
+      updatedAt: new Date("2024-09-02")
+    }
+  ];
 
   // Mock metrics
   const metrics = {
@@ -80,6 +166,16 @@ export default function OpportunityDetail() {
 
   const handleUploadPO = () => {
     console.log("Upload PO clicked");
+  };
+
+  const handleNewQuote = () => {
+    console.log("Creating new quote from latest selection");
+    navigate("/quote-editor");
+  };
+
+  const handleQuoteClick = (quote: Quote) => {
+    console.log("Opening quote:", quote.id);
+    navigate(`/quote-editor?id=${quote.id}`);
   };
 
   return (
@@ -227,21 +323,30 @@ export default function OpportunityDetail() {
           </TabsContent>
 
           <TabsContent value="quotes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quotes</CardTitle>
-                <CardDescription>
-                  Generated quotes and pricing information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium 
-                  doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore 
-                  veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">Quotes</h2>
+                  <p className="text-muted-foreground">
+                    Generated quotes and pricing information for this opportunity
+                  </p>
+                </div>
+                <Button onClick={handleNewQuote} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Quote
+                </Button>
+              </div>
+
+              <div className="grid gap-4">
+                {mockQuotes.map((quote) => (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    onClick={() => handleQuoteClick(quote)}
+                  />
+                ))}
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="pos">
