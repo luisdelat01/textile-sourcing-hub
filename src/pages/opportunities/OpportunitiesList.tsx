@@ -227,28 +227,28 @@ export default function OpportunitiesList() {
           {/* Priority Filter */}
           <div className="space-y-2">
             <Label>Priority</Label>
-            <Select value={filters.priority} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Priorities</SelectItem>
-                {priorities.map(priority => (
-                  <SelectItem key={priority} value={priority}>{priority}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={filters.priority || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value === "all" ? "" : value }))}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              {priorities.map(priority => (
+                <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           </div>
 
           {/* Source Filter */}
           <div className="space-y-2">
             <Label>Source</Label>
-            <Select value={filters.source} onValueChange={(value) => setFilters(prev => ({ ...prev, source: value }))}>
+            <Select value={filters.source || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, source: value === "all" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Sources</SelectItem>
+                <SelectItem value="all">All Sources</SelectItem>
                 {sources.map(source => (
                   <SelectItem key={source} value={source}>{source}</SelectItem>
                 ))}
@@ -259,12 +259,12 @@ export default function OpportunitiesList() {
           {/* Assigned Rep Filter */}
           <div className="space-y-2">
             <Label>Assigned Rep</Label>
-            <Select value={filters.assignedRep} onValueChange={(value) => setFilters(prev => ({ ...prev, assignedRep: value }))}>
+            <Select value={filters.assignedRep || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, assignedRep: value === "all" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select rep" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Reps</SelectItem>
+                <SelectItem value="all">All Reps</SelectItem>
                 {reps.map(rep => (
                   <SelectItem key={rep} value={rep}>{rep}</SelectItem>
                 ))}
