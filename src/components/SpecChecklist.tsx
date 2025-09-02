@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit3, CheckCircle, Circle } from "lucide-react";
+import { Plus, Edit3, CheckCircle, Circle, X } from "lucide-react";
 
 export type SpecKey = "fabricType" | "weightGSM" | "color" | "MOQ" | "deliveryWindow" | "certifications" | "priceTarget" | "handFeelNotes";
 
@@ -18,6 +18,7 @@ export type SpecRecord = Partial<Record<SpecKey, any>>;
 interface SpecChecklistProps {
   specs: SpecRecord;
   onConfirm: (key: SpecKey, value: any) => void;
+  onUndo?: () => void;
 }
 
 const specLabels: Record<SpecKey, string> = {
@@ -42,6 +43,17 @@ const specDescriptions: Record<SpecKey, string> = {
   handFeelNotes: "Texture and feel requirements"
 };
 
+const specHelpers: Record<SpecKey, string> = {
+  fabricType: "e.g., Cotton, Polyester, Linen blend",
+  weightGSM: "Grams per square meter (typical range: 100-300)",
+  color: "Color name, hex code, or Pantone reference",
+  MOQ: "Minimum quantity to place an order",
+  deliveryWindow: "Expected timeframe for delivery",
+  certifications: "Select all applicable certifications",
+  priceTarget: "Target price per unit in USD",
+  handFeelNotes: "Describe the desired texture and feel"
+};
+
 const certificationOptions = [
   "OEKO-TEX Standard 100",
   "GOTS (Global Organic Textile Standard)",
@@ -55,16 +67,30 @@ export function prettyPrintSpecLabel(key: SpecKey): string {
   return specLabels[key] || key;
 }
 
-export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
+export function SpecChecklist({ specs, onConfirm, onUndo }: SpecChecklistProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<SpecKey | null>(null);
+  const [selectedCertifications, setSelectedCertifications] = useState<string[]>([]);
   const { toast } = useToast();
 
   const form = useForm({
     defaultValues: {
-      value: ""
+      value: "",
+      certification: ""
     }
   });
+
+  // Focus first input when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      setTimeout(() => {
+        const firstInput = document.querySelector('input[name="value"]') as HTMLInputElement;
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+    }
+  }, [dialogOpen]);
 
   const allSpecKeys: SpecKey[] = [
     "fabricType", "weightGSM", "color", "MOQ", 
@@ -87,7 +113,10 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
     setEditingKey(key);
     const currentValue = specs[key];
     
-    if (Array.isArray(currentValue)) {
+    if (key === "certifications" && Array.isArray(currentValue)) {
+      setSelectedCertifications(currentValue);
+      form.setValue("value", "");
+    } else if (Array.isArray(currentValue)) {
       form.setValue("value", currentValue.join(", "));
     } else {
       form.setValue("value", currentValue?.toString() || "");
@@ -96,7 +125,7 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
     setDialogOpen(true);
   };
 
-  const handleSubmit = (formData: { value: string }) => {
+  const handleSubmit = (formData: { value: string; certification: string }) => {
     if (!editingKey) return;
 
     let processedValue: any = formData.value;
@@ -107,19 +136,42 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
     } else if (editingKey === "priceTarget") {
       processedValue = parseFloat(formData.value) || 0;
     } else if (editingKey === "certifications") {
-      processedValue = formData.value.split(",").map(cert => cert.trim()).filter(Boolean);
+      processedValue = selectedCertifications;
     }
+
+    const wasNewSpec = specs[editingKey] === undefined || 
+      specs[editingKey] === "" || 
+      (Array.isArray(specs[editingKey]) && specs[editingKey].length === 0);
 
     onConfirm(editingKey, processedValue);
     
+    const action = wasNewSpec ? "Added" : "Updated";
     toast({
-      title: "Spec Confirmed",
-      description: `SPEC_FIELD_CONFIRMED: ${editingKey}`,
+      title: `${action} ${specLabels[editingKey]}`,
+      description: `Successfully ${action.toLowerCase()} specification`,
+      action: onUndo ? (
+        <Button variant="outline" size="sm" onClick={onUndo}>
+          Undo
+        </Button>
+      ) : undefined,
     });
 
     setDialogOpen(false);
     setEditingKey(null);
+    setSelectedCertifications([]);
     form.reset();
+  };
+
+  const addCertification = () => {
+    const newCert = form.getValues("certification");
+    if (newCert && !selectedCertifications.includes(newCert)) {
+      setSelectedCertifications([...selectedCertifications, newCert]);
+      form.setValue("certification", "");
+    }
+  };
+
+  const removeCertification = (cert: string) => {
+    setSelectedCertifications(selectedCertifications.filter(c => c !== cert));
   };
 
   const renderFormField = (key: SpecKey) => {
@@ -136,6 +188,7 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
                 <FormControl>
                   <Input type="number" placeholder="Enter value" {...field} />
                 </FormControl>
+                <FormDescription>{specHelpers[key]}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -153,6 +206,7 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
                 <FormControl>
                   <Input type="number" step="0.01" placeholder="Enter price" {...field} />
                 </FormControl>
+                <FormDescription>{specHelpers[key]}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -170,6 +224,7 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
                 <FormControl>
                   <Textarea placeholder="Describe texture and feel requirements" {...field} />
                 </FormControl>
+                <FormDescription>{specHelpers[key]}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -178,22 +233,60 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
       
       case "certifications":
         return (
-          <FormField
-            control={form.control}
-            name="value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{specLabels[key]}</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter certifications separated by commas" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="certification"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{specLabels[key]}</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a certification" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {certificationOptions.map((cert) => (
+                            <SelectItem key={cert} value={cert}>
+                              {cert}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <Button type="button" onClick={addCertification} size="sm">
+                      Add
+                    </Button>
+                  </div>
+                  <FormDescription>{specHelpers[key]}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {selectedCertifications.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Selected Certifications:</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCertifications.map((cert) => (
+                    <Badge key={cert} variant="secondary" className="flex items-center gap-1">
+                      {cert}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 hover:bg-transparent"
+                        onClick={() => removeCertification(cert)}
+                        aria-label={`Remove ${cert}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             )}
-          />
+          </div>
         );
       
       default:
@@ -207,6 +300,7 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
                 <FormControl>
                   <Input placeholder="Enter value" {...field} />
                 </FormControl>
+                <FormDescription>{specHelpers[key]}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -256,7 +350,12 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
                       <div className="text-xs text-muted-foreground">{specDescriptions[key]}</div>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(key)}>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleEdit(key)}
+                    aria-label={`Add ${specLabels[key]}`}
+                  >
                     <Plus className="h-3 w-3 mr-1" />
                     Add
                   </Button>
@@ -284,7 +383,12 @@ export function SpecChecklist({ specs, onConfirm }: SpecChecklistProps) {
                       </div>
                     </div>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => handleEdit(key)}>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => handleEdit(key)}
+                    aria-label={`Edit ${specLabels[key]}`}
+                  >
                     <Edit3 className="h-3 w-3 mr-1" />
                     Edit
                   </Button>

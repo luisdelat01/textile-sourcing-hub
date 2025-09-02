@@ -22,6 +22,7 @@ export default function OpportunityDetail() {
   };
 
   const [nextStep, setNextStep] = useState(mock.nextStep);
+  const [lastSpecChange, setLastSpecChange] = useState<{ key: SpecKey; previousValue: any } | null>(null);
 
   // Specs state management
   const [specs, setSpecs] = useState<SpecRecord>({
@@ -48,8 +49,20 @@ export default function OpportunityDetail() {
   };
 
   const handleSpecConfirm = (key: SpecKey, value: any) => {
+    setLastSpecChange({ key, previousValue: specs[key] });
     setSpecs(prev => ({ ...prev, [key]: value }));
     console.log(`SPEC_FIELD_CONFIRMED: ${key}`, value);
+  };
+
+  const handleUndo = () => {
+    if (lastSpecChange) {
+      setSpecs(prev => ({ 
+        ...prev, 
+        [lastSpecChange.key]: lastSpecChange.previousValue 
+      }));
+      console.log("SPEC_FIELD_REVERTED:", lastSpecChange.key, lastSpecChange.previousValue);
+      setLastSpecChange(null);
+    }
   };
 
   const handleSaveNextStep = () => {
@@ -187,7 +200,11 @@ export default function OpportunityDetail() {
               </div>
 
               {/* Spec Checklist */}
-              <SpecChecklist specs={specs} onConfirm={handleSpecConfirm} />
+            <SpecChecklist 
+              specs={specs} 
+              onConfirm={handleSpecConfirm}
+              onUndo={lastSpecChange ? handleUndo : undefined}
+            />
             </div>
           </TabsContent>
 
