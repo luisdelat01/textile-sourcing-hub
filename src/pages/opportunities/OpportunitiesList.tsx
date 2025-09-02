@@ -128,9 +128,9 @@ export default function OpportunitiesList() {
   const [filters, setFilters] = useState({
     search: "",
     stages: [] as string[],
-    priority: "",
-    source: "",
-    assignedRep: "",
+    priority: "all",
+    source: "all",
+    assignedRep: "all",
   });
 
   const stages = ["Discovery", "Qualified", "Proposal", "Negotiation", "Closed Won", "Closed Lost"];
@@ -142,9 +142,9 @@ export default function OpportunitiesList() {
     const matchesSearch = opp.name.toLowerCase().includes(filters.search.toLowerCase()) ||
                          opp.company.toLowerCase().includes(filters.search.toLowerCase());
     const matchesStage = filters.stages.length === 0 || filters.stages.includes(opp.stage);
-    const matchesPriority = !filters.priority || opp.priority === filters.priority;
-    const matchesSource = !filters.source || opp.source === filters.source;
-    const matchesRep = !filters.assignedRep || opp.assignedRep === filters.assignedRep;
+    const matchesPriority = filters.priority === "all" || opp.priority === filters.priority;
+    const matchesSource = filters.source === "all" || opp.source === filters.source;
+    const matchesRep = filters.assignedRep === "all" || opp.assignedRep === filters.assignedRep;
     
     return matchesSearch && matchesStage && matchesPriority && matchesSource && matchesRep;
   });
@@ -227,7 +227,7 @@ export default function OpportunitiesList() {
           {/* Priority Filter */}
           <div className="space-y-2">
             <Label>Priority</Label>
-          <Select value={filters.priority || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value === "all" ? "" : value }))}>
+          <Select value={filters.priority} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value }))}>
             <SelectTrigger>
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
@@ -243,7 +243,7 @@ export default function OpportunitiesList() {
           {/* Source Filter */}
           <div className="space-y-2">
             <Label>Source</Label>
-            <Select value={filters.source || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, source: value === "all" ? "" : value }))}>
+            <Select value={filters.source} onValueChange={(value) => setFilters(prev => ({ ...prev, source: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
@@ -259,7 +259,7 @@ export default function OpportunitiesList() {
           {/* Assigned Rep Filter */}
           <div className="space-y-2">
             <Label>Assigned Rep</Label>
-            <Select value={filters.assignedRep || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, assignedRep: value === "all" ? "" : value }))}>
+            <Select value={filters.assignedRep} onValueChange={(value) => setFilters(prev => ({ ...prev, assignedRep: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Select rep" />
               </SelectTrigger>
