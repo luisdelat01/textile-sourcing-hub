@@ -64,11 +64,11 @@ export default function OpportunityDetail() {
       ],
       validityDate: "2024-10-15",
       deliveryTerms: "4-6 weeks from order confirmation",
-      incoterms: "FOB Shanghai",
+      incoterms: "FOB",
       total: 7600,
       status: "Draft",
-      createdAt: new Date("2024-09-01"),
-      updatedAt: new Date("2024-09-01")
+      createdAt: "2024-09-01T10:00:00Z",
+      updatedAt: "2024-09-02T14:30:00Z"
     },
     {
       id: "Q-002",
@@ -85,11 +85,11 @@ export default function OpportunityDetail() {
       ],
       validityDate: "2024-09-30",
       deliveryTerms: "3-4 weeks from order confirmation",
-      incoterms: "EXW Guangzhou",
+      incoterms: "EXW",
       total: 7120,
       status: "Sent",
-      createdAt: new Date("2024-08-28"),
-      updatedAt: new Date("2024-08-30")
+      createdAt: "2024-08-28T09:15:00Z",
+      updatedAt: "2024-08-30T16:45:00Z"
     },
     {
       id: "Q-003",
@@ -114,13 +114,19 @@ export default function OpportunityDetail() {
       ],
       validityDate: "2024-11-01",
       deliveryTerms: "5-7 weeks from order confirmation", 
-      incoterms: "CIF Los Angeles",
+      incoterms: "CIF",
       total: 11580,
       status: "Draft",
-      createdAt: new Date("2024-09-02"),
-      updatedAt: new Date("2024-09-02")
+      createdAt: "2024-09-02T08:00:00Z",
+      updatedAt: "2024-09-03T11:20:00Z"
     }
   ];
+
+  // Sort quotes by updatedAt desc
+  const sortedQuotes = mockQuotes.sort((a, b) => {
+    if (!a.updatedAt || !b.updatedAt) return 0;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
 
   // Mock metrics
   const metrics = {
@@ -337,15 +343,33 @@ export default function OpportunityDetail() {
                 </Button>
               </div>
 
-              <div className="grid gap-4">
-                {mockQuotes.map((quote) => (
-                  <QuoteCard
-                    key={quote.id}
-                    quote={quote}
-                    onClick={() => handleQuoteClick(quote)}
-                  />
-                ))}
-              </div>
+              {sortedQuotes.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <Card className="w-full max-w-md text-center">
+                    <CardContent className="pt-6">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No quotes yet</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Create your first quote for this opportunity
+                      </p>
+                      <Button onClick={handleNewQuote} className="flex items-center gap-2 mx-auto">
+                        <Plus className="h-4 w-4" />
+                        New Quote
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {sortedQuotes.map((quote) => (
+                    <QuoteCard
+                      key={quote.id}
+                      quote={quote}
+                      onClick={() => handleQuoteClick(quote)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 

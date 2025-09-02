@@ -95,12 +95,12 @@ export default function QuoteEditor() {
     lines: quoteLines,
     validityDate: validityDate ? format(validityDate, "yyyy-MM-dd") : "",
     deliveryTerms: form.getValues("deliveryTerms"),
-    incoterms: form.getValues("incoterms"),
+    incoterms: form.getValues("incoterms") as "EXW" | "FOB" | "CIF" | "DAP" | "DDP" | undefined,
     total,
     status: quoteStatus,
     notes: form.getValues("notes"),
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 
   const updateQuoteLine = (index: number, updates: Partial<QuoteLine>) => {

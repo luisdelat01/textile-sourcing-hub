@@ -13,10 +13,10 @@ export type Quote = {
   lines: QuoteLine[];
   validityDate: string;
   deliveryTerms: string;
-  incoterms?: string;
+  incoterms?: "EXW" | "FOB" | "CIF" | "DAP" | "DDP";
   total: number;
   status: "Draft" | "Sent";
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: string;
+  updatedAt?: string;
 };

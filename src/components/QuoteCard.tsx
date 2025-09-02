@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Truck, FileText, TestTube } from "lucide-react";
 import { Quote } from "@/types/quote";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 
 interface QuoteCardProps {
   quote: Quote;
@@ -13,8 +14,17 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
   
   return (
     <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer" 
+      className="hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open quote ${quote.id}`}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -38,7 +48,7 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
               <div className="text-muted-foreground">Valid Until</div>
-              <div className="font-medium">{quote.validityDate}</div>
+              <div className="font-medium">{formatDate(quote.validityDate)}</div>
             </div>
           </div>
           
@@ -67,7 +77,7 @@ export function QuoteCard({ quote, onClick }: QuoteCardProps) {
           </div>
           <div className="text-right">
             <div className="text-sm text-muted-foreground">Total</div>
-            <div className="text-lg font-bold">${quote.total.toLocaleString()}</div>
+            <div className="text-lg font-bold">{formatCurrency(quote.total)}</div>
           </div>
         </div>
       </CardContent>

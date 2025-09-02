@@ -37,7 +37,7 @@ export function QuotePDFButton({
           incoterms: quote.incoterms,
           total: quote.total,
           status: quote.status,
-          createdAt: quote.createdAt.toISOString()
+          createdAt: quote.createdAt
         },
         lines: quote.lines.map(line => ({
           productId: line.productId,
