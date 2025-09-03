@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,13 @@ export default function POReview() {
   const [tolerance, setTolerance] = useState(2);
   const [clarificationOpen, setClarificationOpen] = useState(false);
   const [clarificationMessage, setClarificationMessage] = useState("");
+  const [lineItemDiffs, setLineItemDiffs] = useState<Array<{
+    product: string;
+    quoteQty: number;
+    quotePrice: number;
+    poQty: number;
+    poPrice: number;
+  }>>([]);
   const [poFields, setPOFields] = useState<POField>({
     poNumber: "",
     date: undefined,
@@ -75,6 +82,32 @@ export default function POReview() {
     createdAt: "2024-08-28T09:15:00Z",
     updatedAt: "2024-08-30T16:45:00Z"
   };
+
+  // Persist line item comparisons to avoid flicker
+  useEffect(() => {
+    if (uploadedFile && latestSentQuote) {
+      const diffs = latestSentQuote.lines.map(line => ({
+        product: line.name,
+        quoteQty: line.quantity,
+        quotePrice: line.price,
+        poQty: Math.floor(line.quantity * (1 + (Math.random() - 0.5) * 0.1)),
+        poPrice: Number((line.price * (1 + (Math.random() - 0.5) * 0.05)).toFixed(2))
+      }));
+      setLineItemDiffs(diffs);
+    } else {
+      setLineItemDiffs([]);
+    }
+  }, [uploadedFile, latestSentQuote]);
+
+  // Check if PO is ready for confirmation
+  const isPOReady = Boolean(
+    uploadedFile && 
+    poFields.poNumber && 
+    poFields.date && 
+    poFields.totalQuantity > 0 && 
+    poFields.totalPrice > 0 && 
+    poFields.deliveryTerms
+  );
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
