@@ -512,7 +512,7 @@ export default function POReview() {
             {hasToleranceViolations() && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
+                <AlertDescription aria-live="polite">
                   The following items exceed the tolerance threshold:
                   <ul className="mt-2 ml-4 list-disc">
                     {getViolationItems().map((item, index) => (
