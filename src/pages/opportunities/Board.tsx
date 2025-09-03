@@ -4,9 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpportunities, STAGES, type StageEnum, type Opportunity } from "@/stores/useOpportunities";
 import { cn } from "@/lib/utils";
-import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus, GripVertical } from "lucide-react";
+import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus, GripVertical, Search, Filter, RotateCcw, List, Eye, EyeOff } from "lucide-react";
+import { NewOpportunityDialog } from "@/components/opportunities/NewOpportunityDialog";
 import { 
   DndContext, 
   DragEndEvent, 
@@ -31,6 +35,9 @@ interface OpportunityCardProps {
 
 function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const navigate = useNavigate();
+  const { updateOpportunity } = useOpportunities();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(opportunity.nextStep);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ 
     id: opportunity.id 
   });
@@ -60,20 +67,48 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
     }
   };
 
+  const handleNextStepEdit = () => {
+    setIsEditing(true);
+    setEditValue(opportunity.nextStep);
+  };
+
+  const handleNextStepSave = () => {
+    if (editValue.trim() !== opportunity.nextStep) {
+      updateOpportunity(opportunity.id, { nextStep: editValue.trim() });
+      toast({
+        title: "Next step updated",
+        description: "The next step has been saved",
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleNextStepCancel = () => {
+    setEditValue(opportunity.nextStep);
+    setIsEditing(false);
+  };
+
+  const handleNextStepKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleNextStepSave();
+    } else if (e.key === "Escape") {
+      handleNextStepCancel();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       data-testid={`opp-card-${opportunity.id}`}
       role="button"
       tabIndex={0}
       className={cn(
-        "outline-none cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-50 border border-dashed"
+        "outline-none select-none cursor-pointer",
+        isDragging && "opacity-50"
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      aria-grabbed={isDragging}
     >
       <Card className="hover:shadow-md transition-shadow group">
         <CardHeader className="pb-3">
@@ -85,7 +120,12 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
               <Badge variant={getPriorityVariant(opportunity.priority)} className="text-xs shrink-0">
                 {opportunity.priority}
               </Badge>
-              <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab" />
+              <GripVertical 
+                {...listeners}
+                {...attributes}
+                className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing hover:text-foreground transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -108,9 +148,27 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
           {/* Next Step */}
           <div className="text-xs text-foreground leading-relaxed">
             <span className="font-medium">Next: </span>
-            <span className="truncate block">
-              {opportunity.nextStep}
-            </span>
+            {isEditing ? (
+              <Input
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={handleNextStepSave}
+                onKeyDown={handleNextStepKeyDown}
+                className="text-xs h-6 mt-1"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span 
+                className="truncate block cursor-pointer hover:bg-muted/50 px-1 py-0.5 rounded"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextStepEdit();
+                }}
+              >
+                {opportunity.nextStep}
+              </span>
+            )}
           </div>
 
           {/* Status Badges */}
@@ -205,8 +263,9 @@ function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { cou
 }
 
 export default function Board() {
-  const { visible, countsByStage, moveOpportunityStage } = useOpportunities();
+  const { visible, countsByStage, moveOpportunityStage, filters, setFilters, opportunities } = useOpportunities();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -277,6 +336,21 @@ export default function Board() {
     setActiveId(null);
   };
 
+  // Get unique values for filter options
+  const uniqueReps = [...new Set(opportunities.map(o => o.assignedRep))];
+
+  const resetFilters = () => {
+    setFilters({
+      search: "",
+      stages: [],
+      priority: "all",
+      assignedRep: "all",
+      brand: "all",
+      source: "all",
+      dateRange: "all"
+    });
+  };
+
   return (
     <DndContext 
       sensors={sensors} 
@@ -285,17 +359,132 @@ export default function Board() {
     >
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Opportunities Board</h1>
-            <p className="text-muted-foreground mt-1">
-              Kanban view of your textile sourcing opportunities
-            </p>
+        <div className="border-b">
+          <div className="flex justify-between items-center p-6">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Opportunities Board</h1>
+              <p className="text-muted-foreground mt-1">
+                Kanban view of your textile sourcing opportunities
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebug(!showDebug)}
+              >
+                {showDebug ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                DEBUG
+              </Button>
+              <NewOpportunityDialog />
+            </div>
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Opportunity
-          </Button>
+          
+          {/* Filter Bar */}
+          <div className="px-6 pb-4 space-y-3">
+            <div className="flex gap-3 items-center flex-wrap">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search opportunities..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({ search: e.target.value })}
+                  className="pl-9 w-64"
+                />
+              </div>
+
+              {/* Priority Filter */}
+              <Select 
+                value={filters.priority} 
+                onValueChange={(value) => setFilters({ priority: value as any })}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priority</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Stage Filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-40 justify-between">
+                    <span>
+                      {filters.stages.length === 0 
+                        ? "All Stages" 
+                        : `${filters.stages.length} stages`}
+                    </span>
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-3" align="start">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Select Stages</div>
+                    {STAGES.map((stage) => (
+                      <label key={stage} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filters.stages.includes(stage)}
+                          onChange={(e) => {
+                            const newStages = e.target.checked
+                              ? [...filters.stages, stage]
+                              : filters.stages.filter(s => s !== stage);
+                            setFilters({ stages: newStages });
+                          }}
+                          className="rounded border-input"
+                        />
+                        <span>{stage}</span>
+                      </label>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Assigned Rep Filter */}
+              <Select 
+                value={filters.assignedRep} 
+                onValueChange={(value) => setFilters({ assignedRep: value })}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Reps</SelectItem>
+                  {uniqueReps.map((rep) => (
+                    <SelectItem key={rep} value={rep}>{rep}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Action Buttons */}
+              <Button variant="outline" size="sm" onClick={resetFilters}>
+                <RotateCcw className="h-4 w-4 mr-1" />
+                Reset
+              </Button>
+              
+              <Button variant="outline" size="sm" asChild>
+                <a href="/opportunities/list">
+                  <List className="h-4 w-4 mr-1" />
+                  List View
+                </a>
+              </Button>
+            </div>
+
+            {/* Debug Panel */}
+            {showDebug && (
+              <div className="bg-muted p-3 rounded-lg text-xs font-mono">
+                <div className="mb-2 font-semibold">Current Filters:</div>
+                <pre>{JSON.stringify(filters, null, 2)}</pre>
+                <div className="mt-2 mb-2 font-semibold">Counts by Stage:</div>
+                <pre>{JSON.stringify(stageCounts, null, 2)}</pre>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Kanban Board */}

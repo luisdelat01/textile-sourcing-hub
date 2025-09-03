@@ -53,6 +53,7 @@ interface OpportunityStore {
   opportunities: Opportunity[];
   filters: OpportunityFilters;
   setFilters: (filters: Partial<OpportunityFilters>) => void;
+  addOpportunity: (opportunity: Omit<Opportunity, "id"|"timeline"|"updated"> & { id?: string }) => void;
   updateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
   moveOpportunityStage: (id: string, newStage: StageEnum) => void;
   getById: (id: string) => Opportunity | undefined;
@@ -239,6 +240,24 @@ export const useOpportunities = create<OpportunityStore>()(
       setFilters: (newFilters) => set((state) => ({
         filters: { ...state.filters, ...newFilters }
       })),
+      addOpportunity: (opportunity) => set((state) => {
+        const id = opportunity.id || `OPP-${Date.now()}`;
+        const updated = new Date().toISOString().split('T')[0];
+        const timeline = [{
+          date: new Date().toISOString(),
+          event: "Created",
+          description: "Opportunity created"
+        }];
+        
+        const newOpportunity: Opportunity = {
+          ...opportunity,
+          id,
+          updated,
+          timeline
+        };
+        
+        return { opportunities: [newOpportunity, ...state.opportunities] };
+      }),
       updateOpportunity: (id, updates) => set((state) => {
         const opportunity = state.opportunities.find(opp => opp.id === id);
         const updatedOpportunities = state.opportunities.map(opp => {
