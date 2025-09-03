@@ -427,18 +427,22 @@ export default function POReview() {
                       <TableCell className="font-medium">{item.field}</TableCell>
                       <TableCell>{item.poValue}</TableCell>
                       <TableCell>{item.quoteValue}</TableCell>
-                      <TableCell>
-                        {item.diff ? (
-                          <div className="flex items-center gap-2">
-                            <span>{formatCurrency(item.diff.absoluteDiff)}</span>
-                            <Badge variant={item.diff.percentageDiff > tolerance ? "destructive" : "secondary"}>
-                              {item.diff.percentageDiff.toFixed(1)}%
-                            </Badge>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
+                       <TableCell>
+                         {item.diff ? (
+                           <div className="flex items-center gap-2">
+                             <span>
+                               {item.field === "Total Price"
+                                 ? formatCurrency(item.diff.absoluteDiff)
+                                 : Math.round(item.diff.absoluteDiff)}
+                             </span>
+                             <Badge variant={item.diff.percentageDiff > tolerance ? "destructive" : "secondary"}>
+                               {item.diff.percentageDiff.toFixed(1)}%
+                             </Badge>
+                           </div>
+                         ) : (
+                           <span className="text-muted-foreground">—</span>
+                         )}
+                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
