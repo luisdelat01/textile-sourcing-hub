@@ -175,13 +175,12 @@ export default function POReview() {
 
   const hasToleranceViolations = () => {
     const comparisonData = getComparisonData();
-    const lineItems = getLineItemComparison();
     
     const fieldViolations = comparisonData.some(item => 
       item.diff && item.diff.percentageDiff > tolerance
     );
     
-    const lineViolations = lineItems.some(item => {
+    const lineViolations = lineItemDiffs.some(item => {
       const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
       const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
       return qtyDiff > tolerance || priceDiff > tolerance;
@@ -193,7 +192,6 @@ export default function POReview() {
   const getViolationItems = () => {
     const violations = [];
     const comparisonData = getComparisonData();
-    const lineItems = getLineItemComparison();
     
     comparisonData.forEach(item => {
       if (item.diff && item.diff.percentageDiff > tolerance) {
@@ -201,7 +199,7 @@ export default function POReview() {
       }
     });
     
-    lineItems.forEach(item => {
+    lineItemDiffs.forEach(item => {
       const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
       const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
       
@@ -464,29 +462,29 @@ export default function POReview() {
                     <TableHead>Diff</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {getLineItemComparison().map((item, index) => {
-                    const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
-                    const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
-                    
-                    return (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.product}</TableCell>
-                        <TableCell>{item.poQty} vs {item.quoteQty}</TableCell>
-                        <TableCell>{formatCurrency(item.poPrice)} vs {formatCurrency(item.quotePrice)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Badge variant={qtyDiff > tolerance ? "destructive" : "secondary"} className="text-xs">
-                              Qty: {qtyDiff.toFixed(1)}%
-                            </Badge>
-                            <Badge variant={priceDiff > tolerance ? "destructive" : "secondary"} className="text-xs">
-                              Price: {priceDiff.toFixed(1)}%
-                            </Badge>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                 <TableBody>
+                   {lineItemDiffs.map((item, index) => {
+                     const qtyDiff = Math.abs(((item.poQty - item.quoteQty) / item.quoteQty) * 100);
+                     const priceDiff = Math.abs(((item.poPrice - item.quotePrice) / item.quotePrice) * 100);
+                     
+                     return (
+                       <TableRow key={index}>
+                         <TableCell className="font-medium">{item.product}</TableCell>
+                         <TableCell>{item.poQty} vs {item.quoteQty}</TableCell>
+                         <TableCell>{formatCurrency(item.poPrice)} vs {formatCurrency(item.quotePrice)}</TableCell>
+                         <TableCell>
+                           <div className="flex gap-1">
+                             <Badge variant={qtyDiff > tolerance ? "destructive" : "secondary"} className="text-xs">
+                               Qty: {qtyDiff.toFixed(1)}%
+                             </Badge>
+                             <Badge variant={priceDiff > tolerance ? "destructive" : "secondary"} className="text-xs">
+                               Price: {priceDiff.toFixed(1)}%
+                             </Badge>
+                           </div>
+                         </TableCell>
+                       </TableRow>
+                     );
+                   })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -503,14 +501,18 @@ export default function POReview() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <Label htmlFor="tolerance">Tolerance (%)</Label>
-              <Input
-                id="tolerance"
-                type="number"
-                step="0.1"
-                value={tolerance}
-                onChange={(e) => setTolerance(Number(e.target.value))}
-                className="w-24"
-              />
+               <Input
+                 id="tolerance"
+                 type="number"
+                 step="0.1"
+                 value={tolerance}
+                 onChange={(e) => {
+                   const v = Number(e.target.value);
+                   if (!Number.isFinite(v)) return;
+                   setTolerance(Math.min(100, Math.max(0, v)));
+                 }}
+                 className="w-24"
+               />
             </div>
 
             {hasToleranceViolations() && (
