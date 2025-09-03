@@ -563,13 +563,19 @@ export default function POReview() {
 
               <Button
                 onClick={handleConfirmPO}
-                disabled={hasToleranceViolations()}
+                disabled={hasToleranceViolations() || !isPOReady}
                 className="flex items-center gap-2"
               >
                 <CheckCircle className="h-4 w-4" />
                 Confirm PO
               </Button>
             </div>
+
+            {!isPOReady && (
+              <p className="text-xs text-muted-foreground">
+                Fill in PO number, date, quantity, price, and delivery terms to enable confirmation.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
