@@ -4,20 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useOpportunities, type StageEnum, type Opportunity } from "@/stores/useOpportunities";
+import { useOpportunities, STAGES, type StageEnum, type Opportunity } from "@/stores/useOpportunities";
 import { cn } from "@/lib/utils";
 import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus } from "lucide-react";
-
-const STAGES: StageEnum[] = [
-  "Inbound Request",
-  "Clarify Buyer Intent", 
-  "Samples Sent",
-  "Quote Sent",
-  "PO Received",
-  "In Production",
-  "Ready to Ship",
-  "Closed – Delivered"
-];
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -118,14 +107,14 @@ interface KanbanColumnProps {
   opportunities: Opportunity[];
 }
 
-function KanbanColumn({ stage, opportunities }: KanbanColumnProps) {
+function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { count: number }) {
   return (
     <div className="flex flex-col h-full">
       {/* Column Header */}
       <div className="flex items-center justify-between p-4 border-b bg-muted/20">
         <h3 className="font-medium text-sm">{stage}</h3>
         <Badge variant="secondary" className="text-xs">
-          {opportunities.length}
+          {count}
         </Badge>
       </div>
 
@@ -152,22 +141,11 @@ function KanbanColumn({ stage, opportunities }: KanbanColumnProps) {
 }
 
 export default function Board() {
-  const { opportunities, filters } = useOpportunities();
+  const { visible, countsByStage } = useOpportunities();
 
-  // Apply filters
-  const filteredOpportunities = useMemo(() => {
-    return opportunities.filter(opp => {
-      const matchesSearch = opp.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                           opp.company.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesStage = filters.stages.length === 0 || filters.stages.includes(opp.stage);
-      const matchesPriority = filters.priority === "all" || opp.priority === filters.priority;
-      const matchesSource = filters.source === "all" || opp.source === filters.source;
-      const matchesRep = filters.assignedRep === "all" || opp.assignedRep === filters.assignedRep;
-      const matchesBrand = filters.brand === "all" || opp.brand === filters.brand;
-      
-      return matchesSearch && matchesStage && matchesPriority && matchesSource && matchesRep && matchesBrand;
-    });
-  }, [opportunities, filters]);
+  // Get filtered opportunities and counts from store selectors
+  const filteredOpportunities = visible();
+  const stageCounts = countsByStage();
 
   // Group opportunities by stage
   const opportunitiesByStage = useMemo(() => {
@@ -214,7 +192,8 @@ export default function Board() {
             >
               <KanbanColumn 
                 stage={stage} 
-                opportunities={opportunitiesByStage[stage] || []} 
+                opportunities={opportunitiesByStage[stage] || []}
+                count={stageCounts[stage]}
               />
             </div>
           ))}

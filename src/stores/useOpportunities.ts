@@ -1,14 +1,18 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export type StageEnum = 
-  | "Inbound Request"
-  | "Clarify Buyer Intent" 
-  | "Samples Sent"
-  | "Quote Sent"
-  | "PO Received"
-  | "In Production"
-  | "Ready to Ship"
-  | "Closed – Delivered";
+export const STAGES = [
+  "Inbound Request",
+  "Clarify Buyer Intent", 
+  "Samples Sent",
+  "Quote Sent",
+  "PO Received",
+  "In Production",
+  "Ready to Ship",
+  "Closed – Delivered"
+] as const;
+
+export type StageEnum = typeof STAGES[number];
 
 export interface Opportunity {
   id: string;
@@ -38,11 +42,11 @@ export interface Opportunity {
 export interface OpportunityFilters {
   search: string;
   stages: StageEnum[];
-  priority: string;
-  assignedRep: string;
-  brand: string;
-  source: string;
-  dateRange: string;
+  priority: "all" | "High" | "Medium" | "Low";
+  assignedRep: "all" | string;
+  brand: "all" | string;
+  source: "all" | string;
+  dateRange: "all" | string;
 }
 
 interface OpportunityStore {
@@ -51,6 +55,10 @@ interface OpportunityStore {
   setFilters: (filters: Partial<OpportunityFilters>) => void;
   updateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
   moveOpportunityStage: (id: string, newStage: StageEnum) => void;
+  getById: (id: string) => Opportunity | undefined;
+  getByStage: (stage: StageEnum) => Opportunity[];
+  visible: () => Opportunity[];
+  countsByStage: () => Record<StageEnum, number>;
 }
 
 // Mock data with the new stage enum
@@ -215,28 +223,135 @@ const mockOpportunities: Opportunity[] = [
   }
 ];
 
-export const useOpportunities = create<OpportunityStore>((set) => ({
-  opportunities: mockOpportunities,
-  filters: {
-    search: "",
-    stages: [],
-    priority: "all",
-    assignedRep: "all",
-    brand: "all",
-    source: "all",
-    dateRange: "all"
-  },
-  setFilters: (newFilters) => set((state) => ({
-    filters: { ...state.filters, ...newFilters }
-  })),
-  updateOpportunity: (id, updates) => set((state) => ({
-    opportunities: state.opportunities.map(opp => 
-      opp.id === id ? { ...opp, ...updates } : opp
-    )
-  })),
-  moveOpportunityStage: (id, newStage) => set((state) => ({
-    opportunities: state.opportunities.map(opp => 
-      opp.id === id ? { ...opp, stage: newStage, updated: new Date().toISOString().split('T')[0] } : opp
-    )
-  }))
-}));
+export const useOpportunities = create<OpportunityStore>()(
+  persist(
+    (set, get) => ({
+      opportunities: mockOpportunities,
+      filters: {
+        search: "",
+        stages: [],
+        priority: "all",
+        assignedRep: "all",
+        brand: "all",
+        source: "all",
+        dateRange: "all"
+      },
+      setFilters: (newFilters) => set((state) => ({
+        filters: { ...state.filters, ...newFilters }
+      })),
+      updateOpportunity: (id, updates) => set((state) => {
+        const opportunity = state.opportunities.find(opp => opp.id === id);
+        const updatedOpportunities = state.opportunities.map(opp => {
+          if (opp.id === id) {
+            const updated = { ...opp, ...updates };
+            // Add timeline event if nextStep changed
+            if (updates.nextStep && updates.nextStep !== opp.nextStep) {
+              updated.timeline = [
+                ...opp.timeline,
+                {
+                  date: new Date().toISOString(),
+                  event: "Next Step Updated",
+                  description: updates.nextStep
+                }
+              ];
+            }
+            return updated;
+          }
+          return opp;
+        });
+        return { opportunities: updatedOpportunities };
+      }),
+      moveOpportunityStage: (id, newStage) => set((state) => {
+        const opportunity = state.opportunities.find(opp => opp.id === id);
+        if (!opportunity) return state;
+        
+        const oldStage = opportunity.stage;
+        const updatedOpportunities = state.opportunities.map(opp => 
+          opp.id === id ? { 
+            ...opp, 
+            stage: newStage, 
+            updated: new Date().toISOString().split('T')[0],
+            timeline: [
+              ...opp.timeline,
+              {
+                date: new Date().toISOString(),
+                event: "Stage Changed",
+                description: `${oldStage} → ${newStage}`
+              }
+            ]
+          } : opp
+        );
+        return { opportunities: updatedOpportunities };
+      }),
+      getById: (id) => {
+        const state = get();
+        return state.opportunities.find(opp => opp.id === id);
+      },
+      getByStage: (stage) => {
+        const state = get();
+        return state.opportunities.filter(opp => opp.stage === stage);
+      },
+      visible: () => {
+        const state = get();
+        const { opportunities, filters } = state;
+        return opportunities.filter(opp => {
+          // Search filter
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            const matchesSearch = 
+              opp.name.toLowerCase().includes(searchLower) ||
+              opp.company.toLowerCase().includes(searchLower) ||
+              opp.contact.toLowerCase().includes(searchLower) ||
+              opp.brand.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+          }
+          
+          // Stage filter
+          if (filters.stages.length > 0 && !filters.stages.includes(opp.stage)) {
+            return false;
+          }
+          
+          // Priority filter
+          if (filters.priority !== "all" && opp.priority !== filters.priority) {
+            return false;
+          }
+          
+          // Assigned rep filter
+          if (filters.assignedRep !== "all" && opp.assignedRep !== filters.assignedRep) {
+            return false;
+          }
+          
+          // Brand filter
+          if (filters.brand !== "all" && opp.brand !== filters.brand) {
+            return false;
+          }
+          
+          // Source filter
+          if (filters.source !== "all" && opp.source !== filters.source) {
+            return false;
+          }
+          
+          return true;
+        });
+      },
+      countsByStage: () => {
+        const state = get();
+        const visibleOpportunities = state.visible();
+        const counts = {} as Record<StageEnum, number>;
+        
+        // Initialize all stages with 0
+        STAGES.forEach(stage => {
+          counts[stage] = 0;
+        });
+        
+        // Count visible opportunities by stage
+        visibleOpportunities.forEach(opp => {
+          counts[opp.stage]++;
+        });
+        
+        return counts;
+      }
+    }),
+    { name: "opportunities-store" }
+  )
+);
