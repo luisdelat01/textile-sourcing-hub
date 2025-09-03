@@ -8,6 +8,9 @@ import { useOpportunities, STAGES, type StageEnum, type Opportunity } from "@/st
 import { cn } from "@/lib/utils";
 import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus } from "lucide-react";
 
+const priorityRank = (p: "High" | "Medium" | "Low") => ({High: 3, Medium: 2, Low: 1}[p] ?? 0);
+const dateVal = (d?: string) => d ? new Date(d).getTime() : 0;
+
 interface OpportunityCardProps {
   opportunity: Opportunity;
 }
@@ -131,9 +134,15 @@ function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { cou
             </p>
           </div>
         ) : (
-          opportunities.map((opportunity) => (
-            <OpportunityCard key={opportunity.id} opportunity={opportunity} />
-          ))
+          [...opportunities]
+            .sort((a, b) => {
+              const pr = priorityRank(b.priority) - priorityRank(a.priority);
+              if (pr !== 0) return pr;
+              return dateVal(a.updated) - dateVal(b.updated);
+            })
+            .map((opportunity) => (
+              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            ))
         )}
       </div>
     </div>
