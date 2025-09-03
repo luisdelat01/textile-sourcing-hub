@@ -1,5 +1,4 @@
-import { createContext, useContext, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useState } from 'react';
 
 export interface LabDip {
   id: string;
@@ -7,14 +6,6 @@ export interface LabDip {
   colorRef: string;
   status: "Requested" | "Sent" | "Approved";
 }
-
-interface LabDipsContextType {
-  labDips: LabDip[];
-  addLabDips: (newDips: LabDip[]) => void;
-  updateLabDipStatus: (id: string, newStatus: LabDip["status"]) => void;
-}
-
-const LabDipsContext = createContext<LabDipsContextType | undefined>(undefined);
 
 const initialLabDips: LabDip[] = [
   { id: "LD-001", article: "Organic Cotton Tee", colorRef: "Forest Green #2E7D32", status: "Requested" },
@@ -28,32 +19,39 @@ const initialLabDips: LabDip[] = [
   { id: "LD-009", article: "Cotton Dress", colorRef: "Sky Blue #03A9F4", status: "Approved" },
 ];
 
-export function LabDipsProvider({ children }: { children: ReactNode }) {
-  const [labDips, setLabDips] = useState<LabDip[]>(initialLabDips);
+// Simple global state using a module-level variable (temporary solution)
+let globalLabDips: LabDip[] = [...initialLabDips];
+const subscribers: Array<(dips: LabDip[]) => void> = [];
+
+export function useLabDipsData() {
+  const [labDips, setLabDips] = useState<LabDip[]>(globalLabDips);
+
+  // Subscribe to global changes
+  useState(() => {
+    const unsubscribe = () => {
+      const index = subscribers.indexOf(setLabDips);
+      if (index > -1) subscribers.splice(index, 1);
+    };
+    
+    subscribers.push(setLabDips);
+    return unsubscribe;
+  });
 
   const addLabDips = (newDips: LabDip[]) => {
-    setLabDips(prev => [...prev, ...newDips]);
+    globalLabDips = [...globalLabDips, ...newDips];
+    subscribers.forEach(subscriber => subscriber([...globalLabDips]));
   };
 
   const updateLabDipStatus = (id: string, newStatus: LabDip["status"]) => {
-    setLabDips(prev => 
-      prev.map(dip => 
-        dip.id === id ? { ...dip, status: newStatus } : dip
-      )
+    globalLabDips = globalLabDips.map(dip => 
+      dip.id === id ? { ...dip, status: newStatus } : dip
     );
+    subscribers.forEach(subscriber => subscriber([...globalLabDips]));
   };
 
-  return (
-    <LabDipsContext.Provider value={{ labDips, addLabDips, updateLabDipStatus }}>
-      {children}
-    </LabDipsContext.Provider>
-  );
-}
-
-export function useLabDips() {
-  const context = useContext(LabDipsContext);
-  if (context === undefined) {
-    throw new Error('useLabDips must be used within a LabDipsProvider');
-  }
-  return context;
+  return {
+    labDips,
+    addLabDips,
+    updateLabDipStatus
+  };
 }

@@ -27,7 +27,7 @@ interface POField {
 
 export default function POReview() {
   const { toast } = useToast();
-  const { addLabDips } = useLabDips();
+  const { addLabDips } = useLabDipsData();
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [tolerance, setTolerance] = useState(2);
   const [clarificationOpen, setClarificationOpen] = useState(false);

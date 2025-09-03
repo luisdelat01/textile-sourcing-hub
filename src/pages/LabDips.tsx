@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
-import { useLabDips } from "@/stores/useLabDips";
+import { useLabDips } from "@/contexts/LabDipsContext";
 
 export default function LabDips() {
   const { labDips, updateLabDipStatus } = useLabDips();
