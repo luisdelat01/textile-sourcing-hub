@@ -40,6 +40,7 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(opportunity.nextStep);
+  const downRef = useRef<EventTarget | null>(null);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ 
     id: opportunity.id 
   });
@@ -57,10 +58,13 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const handleClick = () => {
-    if (!isDragging) {
+  const handleMouseUp = (e: React.MouseEvent) => {
+    // If the initial press was on the drag handle, ignore navigation
+    const pressedOnHandle = (downRef.current instanceof Element) && !!(downRef.current as Element).closest('[data-drag-handle]');
+    if (!isDragging && !pressedOnHandle) {
       navigate(`/opportunities/${opportunity.id}`);
     }
+    downRef.current = null;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -108,7 +112,8 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
         "outline-none select-none cursor-pointer",
         isDragging && "opacity-50"
       )}
-      onClick={handleClick}
+      onMouseDown={(e) => { downRef.current = e.target; }}
+      onMouseUp={handleMouseUp}
       onKeyDown={handleKeyDown}
       aria-grabbed={isDragging}
     >
@@ -125,6 +130,7 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
               <div 
                 {...listeners}
                 {...attributes}
+                data-drag-handle
                 className="cursor-grab active:cursor-grabbing"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -392,7 +398,7 @@ export default function Board() {
                 {showDebug ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 DEBUG
               </Button>
-              <NewOpportunityDialog />
+              <NewOpportunityDialog onCreate={(payload) => addOpportunity(payload)} />
             </div>
           </div>
           

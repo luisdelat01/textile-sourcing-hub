@@ -25,7 +25,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function NewOpportunityDialog() {
+export function NewOpportunityDialog({ onCreate }: { onCreate?: (payload: any) => void }) {
   const [open, setOpen] = React.useState(false);
   const { addOpportunity } = useOpportunities();
   const { toast } = useToast();
@@ -46,7 +46,7 @@ export function NewOpportunityDialog() {
   });
 
   const onSubmit = (data: FormData) => {
-    addOpportunity({
+    const payload = {
       name: data.name,
       company: data.company,
       contact: data.contact,
@@ -61,7 +61,13 @@ export function NewOpportunityDialog() {
       hasQuote: false,
       hasPO: false,
       hasLabDips: false,
-    });
+    };
+
+    if (onCreate) {
+      onCreate(payload);
+    } else {
+      addOpportunity(payload);
+    }
     
     toast({
       title: "Opportunity created",
