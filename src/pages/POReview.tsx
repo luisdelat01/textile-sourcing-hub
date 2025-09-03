@@ -12,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Upload, FileText, AlertTriangle, CheckCircle, Calendar as CalendarIcon, Send } from "lucide-react";
 import { Quote } from "@/types/quote";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -298,16 +298,11 @@ export default function POReview() {
               </div>
             ) : (
               <div className="space-y-4">
-                {(() => {
-                  const fileLabel = uploadedFile?.split('//')[1] ?? uploadedFile ?? "Uploaded PO";
-                  return (
-                    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <FileText className="h-4 w-4" />
-                      <span className="text-sm font-medium">{fileLabel}</span>
-                      <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
-                    </div>
-                  );
-                })()}
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm font-medium">{uploadedFile.split('//')[1]}</span>
+                  <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                </div>
                 <Button 
                   variant="outline" 
                   onClick={() => setUploadedFile(null)}
@@ -435,19 +430,10 @@ export default function POReview() {
                       <TableCell>
                         {item.diff ? (
                           <div className="flex items-center gap-2">
-                            <span>
-                              {item.field === "Total Price" 
-                                ? formatCurrency(item.diff.absoluteDiff)
-                                : item.field === "Total Quantity"
-                                ? Math.round(item.diff.absoluteDiff).toString()
-                                : "—"
-                              }
-                            </span>
-                            {item.field !== "Delivery Terms" && (
-                              <Badge variant={item.diff.percentageDiff > tolerance ? "destructive" : "secondary"}>
-                                {item.diff.percentageDiff.toFixed(1)}%
-                              </Badge>
-                            )}
+                            <span>{formatCurrency(item.diff.absoluteDiff)}</span>
+                            <Badge variant={item.diff.percentageDiff > tolerance ? "destructive" : "secondary"}>
+                              {item.diff.percentageDiff.toFixed(1)}%
+                            </Badge>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
