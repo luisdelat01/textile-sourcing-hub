@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpportunities, STAGES, type StageEnum, type Opportunity } from "@/stores/useOpportunities";
 import { cn } from "@/lib/utils";
-import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus, GripVertical, Search, Filter, RotateCcw, List, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus, GripVertical, Search, Filter, RotateCcw, List, Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { NewOpportunityDialog } from "@/components/opportunities/NewOpportunityDialog";
 import { 
   DndContext, 
@@ -98,7 +98,6 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   return (
     <div
-      ref={setNodeRef}
       data-testid={`opp-card-${opportunity.id}`}
       role="button"
       tabIndex={0}
@@ -120,12 +119,17 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
               <Badge variant={getPriorityVariant(opportunity.priority)} className="text-xs shrink-0">
                 {opportunity.priority}
               </Badge>
-              <GripVertical 
+              <div 
+                ref={setNodeRef}
                 {...listeners}
                 {...attributes}
-                className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing hover:text-foreground transition-colors"
+                className="cursor-grab active:cursor-grabbing"
                 onClick={(e) => e.stopPropagation()}
-              />
+              >
+                <GripVertical 
+                  className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors"
+                />
+              </div>
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -233,7 +237,7 @@ function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { cou
         ref={setNodeRef}
         className={cn(
           "flex-1 p-4 space-y-3 overflow-y-auto transition-colors",
-          isOver && "bg-muted/40"
+          isOver && "bg-muted/40 ring-1 ring-primary/20"
         )}
       >
         {opportunities.length === 0 ? (
@@ -266,13 +270,19 @@ export default function Board() {
   const { visible, countsByStage, moveOpportunityStage, filters, setFilters, opportunities } = useOpportunities();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Configure drag sensors
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 4 } }),
     useSensor(KeyboardSensor)
   );
+
+  // Horizontal scroll function
+  const scrollBy = (delta: number) => {
+    scrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  };
 
   // Get filtered opportunities and counts from store selectors
   const filteredOpportunities = visible();
@@ -303,10 +313,12 @@ export default function Board() {
     : null;
 
   const handleDragStart = (event: DragStartEvent) => {
+    console.log("DRAG_START", event.active.id);
     setActiveId(String(event.active.id));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log("DRAG_END", { active: event.active.id, over: event.over?.id });
     const { active, over } = event;
     
     if (!over) {
@@ -473,6 +485,26 @@ export default function Board() {
                   List View
                 </a>
               </Button>
+
+              {/* Horizontal scroll arrows */}
+              <div className="flex gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => scrollBy(-320)}
+                  className="px-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => scrollBy(320)}
+                  className="px-2"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Debug Panel */}
@@ -489,7 +521,11 @@ export default function Board() {
 
         {/* Kanban Board */}
         <div className="flex-1 overflow-hidden">
-          <div className="h-full flex overflow-x-auto">
+          <div 
+            ref={scrollRef}
+            className="h-full flex overflow-x-auto scroll-smooth"
+            tabIndex={0}
+          >
             {STAGES.map((stage) => (
               <div 
                 key={stage} 
