@@ -22,7 +22,8 @@ import {
   TouchSensor, 
   KeyboardSensor,
   useDraggable, 
-  useDroppable 
+  useDroppable,
+  closestCenter
 } from "@dnd-kit/core";
 import { useToast } from "@/hooks/use-toast";
 
@@ -368,6 +369,7 @@ export default function Board() {
   return (
     <DndContext 
       sensors={sensors} 
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

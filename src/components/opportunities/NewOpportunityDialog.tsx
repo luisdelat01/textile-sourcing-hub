@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOpportunities, STAGES } from "@/stores/useOpportunities";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 
 const formSchema = z.object({
@@ -28,6 +28,7 @@ type FormData = z.infer<typeof formSchema>;
 export function NewOpportunityDialog() {
   const [open, setOpen] = React.useState(false);
   const { addOpportunity } = useOpportunities();
+  const { toast } = useToast();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
