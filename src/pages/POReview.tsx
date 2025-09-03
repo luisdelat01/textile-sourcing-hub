@@ -250,6 +250,9 @@ export default function POReview() {
     setClarificationOpen(false);
   };
 
+  // Safe filename display
+  const fileLabel = uploadedFile?.split("//")[1] ?? uploadedFile ?? "Uploaded PO";
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -298,7 +301,7 @@ export default function POReview() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                   <FileText className="h-4 w-4" />
-                  <span className="text-sm font-medium">{uploadedFile.split('//')[1]}</span>
+                  <span className="text-sm font-medium">{fileLabel}</span>
                   <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
                 </div>
                 <Button 
