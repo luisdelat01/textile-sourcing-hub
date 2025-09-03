@@ -15,6 +15,7 @@ import { Quote } from "@/types/quote";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useLabDips, LabDip } from "@/stores/useLabDips";
 
 interface POField {
   poNumber: string;
@@ -24,15 +25,9 @@ interface POField {
   deliveryTerms: string;
 }
 
-interface LabDipRecord {
-  id: string;
-  article: string;
-  colorRef: string;
-  status: "Requested" | "In Progress" | "Completed";
-}
-
 export default function POReview() {
   const { toast } = useToast();
+  const { addLabDips } = useLabDips();
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [tolerance, setTolerance] = useState(2);
   const [clarificationOpen, setClarificationOpen] = useState(false);
@@ -223,7 +218,7 @@ export default function POReview() {
 
     // Create lab dip records if needed
     if (latestSentQuote?.lines.some(line => line.labDipRequired)) {
-      const labDips: LabDipRecord[] = latestSentQuote.lines
+      const labDips: LabDip[] = latestSentQuote.lines
         .filter(line => line.labDipRequired)
         .map(line => ({
           id: `LD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -232,7 +227,7 @@ export default function POReview() {
           status: "Requested"
         }));
       
-      console.log("LAB_DIP_SENT (stub)", labDips);
+      addLabDips(labDips);
       toast({
         title: "Lab Dips Requested",
         description: `${labDips.length} lab dip requests have been sent`
