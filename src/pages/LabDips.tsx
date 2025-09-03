@@ -101,7 +101,7 @@ export default function LabDips() {
                   </p>
                 ) : (
                   columnDips.map((dip) => (
-                    <Card key={dip.id} className="hover:shadow-md transition-shadow">
+                    <Card key={dip.id} className="hover:shadow-md transition-shadow animate-in fade-in duration-200">
                       <CardContent className="p-4">
                         <div className="space-y-3">
                           <div className="flex items-start justify-between">
@@ -119,7 +119,7 @@ export default function LabDips() {
                             {dip.status === "Requested" && (
                               <Button 
                                 size="sm" 
-                                className="w-full"
+                                className="w-full text-xs"
                                 onClick={() => updateLabDipStatus(dip.id, "Sent")}
                               >
                                 Mark as Sent
@@ -128,7 +128,7 @@ export default function LabDips() {
                             {dip.status === "Sent" && (
                               <Button 
                                 size="sm" 
-                                className="w-full"
+                                className="w-full text-xs"
                                 onClick={() => updateLabDipStatus(dip.id, "Approved")}
                               >
                                 Approve
