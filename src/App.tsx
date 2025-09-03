@@ -7,6 +7,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { LabDipsProvider } from "./contexts/LabDipsContext";
 import OpportunitiesList from "./pages/opportunities/OpportunitiesList";
 import OpportunityDetail from "./pages/opportunities/OpportunityDetail";
+import Board from "./pages/opportunities/Board";
 import SelectionBuilder from "./pages/SelectionBuilder";
 import QuoteEditor from "./pages/QuoteEditor";
 import POReview from "./pages/POReview";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/" element={<AppLayout />}>
             <Route index element={<OpportunitiesList />} />
             <Route path="opportunities" element={<OpportunitiesList />} />
+            <Route path="opportunities/board" element={<Board />} />
             <Route path="opportunities/:id" element={<OpportunityDetail />} />
             <Route path="selection-builder" element={<SelectionBuilder />} />
             <Route path="quote-editor" element={<QuoteEditor />} />
