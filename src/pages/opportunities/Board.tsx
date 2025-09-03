@@ -274,11 +274,15 @@ function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { cou
   );
 }
 
-export default function Board() {
+export default function Board({ onSwitchToList }: { onSwitchToList?: () => void }) {
+  console.log('🟢 Board component is rendering');
+  
+  const navigate = useNavigate();
   const { visible, countsByStage, moveOpportunityStage, filters, setFilters, opportunities, addOpportunity } = useOpportunities();
   const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showNewOpportunityDialog, setShowNewOpportunityDialog] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Configure drag sensors
@@ -384,12 +388,27 @@ export default function Board() {
         <div className="border-b">
           <div className="flex justify-between items-center p-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Opportunities Board</h1>
+              <h1 className="text-3xl font-bold text-foreground">Opportunities Board1</h1>
               <p className="text-muted-foreground mt-1">
                 Kanban view of your textile sourcing opportunities
               </p>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  alert('Button clicked!'); // This should definitely show
+                  console.log('Opening NewOpportunityDialog');
+                  console.log('Current showNewOpportunityDialog state:', showNewOpportunityDialog);
+                  setShowNewOpportunityDialog(true);
+                  console.log('After setting state to true');
+                  setTimeout(() => console.log('State after timeout:', showNewOpportunityDialog), 100);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Opportunity
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -398,7 +417,6 @@ export default function Board() {
                 {showDebug ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 DEBUG
               </Button>
-              <NewOpportunityDialog onCreate={(payload) => addOpportunity(payload)} />
             </div>
           </div>
           
@@ -489,11 +507,9 @@ export default function Board() {
                 Reset
               </Button>
               
-              <Button variant="outline" size="sm" asChild>
-                <a href="/opportunities">
-                  <List className="h-4 w-4 mr-1" />
-                  List View
-                </a>
+              <Button variant="outline" size="sm" onClick={() => onSwitchToList ? onSwitchToList() : navigate('/opportunities')}>
+                <List className="h-4 w-4 mr-1" />
+                List View
               </Button>
 
               {/* Horizontal scroll arrows */}
@@ -582,6 +598,30 @@ export default function Board() {
           </div>
         ) : null}
       </DragOverlay>
+      
+      {/* New Opportunity Dialog */}
+      <NewOpportunityDialog 
+        open={showNewOpportunityDialog}
+        onOpenChange={(open) => {
+          console.log('NewOpportunityDialog onOpenChange:', open);
+          console.log('Current showNewOpportunityDialog state before change:', showNewOpportunityDialog);
+          setShowNewOpportunityDialog(open);
+        }}
+        onCreate={(payload) => addOpportunity(payload)} 
+      />
+      {showNewOpportunityDialog && (
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          background: 'red', 
+          color: 'white', 
+          padding: '10px', 
+          zIndex: 9999 
+        }}>
+          DEBUG: Dialog should be open! showNewOpportunityDialog = {String(showNewOpportunityDialog)}
+        </div>
+      )}
     </DndContext>
   );
 }

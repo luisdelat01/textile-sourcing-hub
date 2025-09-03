@@ -25,8 +25,20 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function NewOpportunityDialog({ onCreate }: { onCreate?: (payload: any) => void }) {
-  const [open, setOpen] = React.useState(false);
+export function NewOpportunityDialog({ onCreate, open: controlledOpen, onOpenChange }: { onCreate?: (payload: any) => void, open?: boolean, onOpenChange?: (open: boolean) => void }) {
+  console.log('🔴 NewOpportunityDialog function called - RENDER START');
+  
+  React.useEffect(() => {
+    console.log('NewOpportunityDialog rendered. open:', controlledOpen);
+  }, [controlledOpen]);
+  
+  React.useEffect(() => {
+    console.log('NewOpportunityDialog component mounted/updated');
+    console.log('Props received:', { onCreate: !!onCreate, controlledOpen, onOpenChange: !!onOpenChange });
+  });
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const handleOpenChange = onOpenChange || setInternalOpen;
   const { addOpportunity } = useOpportunities();
   const { toast } = useToast();
   
@@ -74,19 +86,26 @@ export function NewOpportunityDialog({ onCreate }: { onCreate?: (payload: any) =
       description: `${data.name} has been added to the board`,
     });
     
-    setOpen(false);
+    handleOpenChange(false);
     form.reset();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Opportunity
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Opportunity
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[600px]">
+        {open && (
+          <div style={{ color: 'red', fontWeight: 'bold', fontSize: '18px', marginBottom: '12px' }}>
+            DEBUG: Dialog is open and rendered
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>Create New Opportunity</DialogTitle>
         </DialogHeader>
@@ -267,7 +286,7 @@ export function NewOpportunityDialog({ onCreate }: { onCreate?: (payload: any) =
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setOpen(false)}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>
