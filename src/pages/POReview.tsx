@@ -15,7 +15,7 @@ import { Quote } from "@/types/quote";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useLabDips, LabDip } from "@/stores/useLabDips";
+import { useLabDips, LabDip } from "@/contexts/LabDipsContext";
 
 interface POField {
   poNumber: string;
@@ -27,7 +27,7 @@ interface POField {
 
 export default function POReview() {
   const { toast } = useToast();
-  const { addLabDips } = useLabDipsData();
+  const { addLabDips } = useLabDips();
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [tolerance, setTolerance] = useState(2);
   const [clarificationOpen, setClarificationOpen] = useState(false);

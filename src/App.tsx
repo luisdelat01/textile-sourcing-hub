@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
-import { LabDipsProvider } from "./stores/useLabDips";
+import { LabDipsProvider } from "./contexts/LabDipsContext";
 import OpportunitiesList from "./pages/opportunities/OpportunitiesList";
 import OpportunityDetail from "./pages/opportunities/OpportunityDetail";
 import SelectionBuilder from "./pages/SelectionBuilder";
