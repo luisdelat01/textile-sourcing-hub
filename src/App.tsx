@@ -20,10 +20,11 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
+      <LabDipsProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
           {/* Main App Routes */}
           <Route path="/" element={<AppLayout />}>
             <Route index element={<OpportunitiesList />} />
@@ -41,8 +42,9 @@ const App = () => (
           
           {/* Catch-all for 404 */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </LabDipsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
