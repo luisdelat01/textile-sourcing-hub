@@ -24,7 +24,7 @@ import {
   useDraggable, 
   useDroppable 
 } from "@dnd-kit/core";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const priorityRank = (p: "High" | "Medium" | "Low") => ({High: 3, Medium: 2, Low: 1}[p] ?? 0);
 const dateVal = (d?: string) => d ? new Date(d).getTime() : 0;
@@ -36,6 +36,7 @@ interface OpportunityCardProps {
 function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const navigate = useNavigate();
   const { updateOpportunity } = useOpportunities();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(opportunity.nextStep);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ 
@@ -98,6 +99,7 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   return (
     <div
+      ref={setNodeRef}
       data-testid={`opp-card-${opportunity.id}`}
       role="button"
       tabIndex={0}
@@ -120,7 +122,6 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
                 {opportunity.priority}
               </Badge>
               <div 
-                ref={setNodeRef}
                 {...listeners}
                 {...attributes}
                 className="cursor-grab active:cursor-grabbing"
@@ -267,7 +268,8 @@ function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { cou
 }
 
 export default function Board() {
-  const { visible, countsByStage, moveOpportunityStage, filters, setFilters, opportunities } = useOpportunities();
+  const { visible, countsByStage, moveOpportunityStage, filters, setFilters, opportunities, addOpportunity } = useOpportunities();
+  const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -480,7 +482,7 @@ export default function Board() {
               </Button>
               
               <Button variant="outline" size="sm" asChild>
-                <a href="/opportunities/list">
+                <a href="/opportunities">
                   <List className="h-4 w-4 mr-1" />
                   List View
                 </a>
