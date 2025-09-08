@@ -31,7 +31,33 @@ export default function OpportunityDetail() {
     ]
   };
 
-  const [nextStepInput, setNextStepInput] = useState(opportunity.nextStep || "");
+  // Calculate smart status based on opportunity state
+  const calculateOpportunityStatus = () => {
+    const sentQuotes = mockQuotes.filter(q => q.status === "Sent");
+    const hasSamples = mockQuotes.some(q => q.lines.some(l => l.labDipRequired));
+    
+    // Check for later stages based on opportunity stage
+    if (opportunity.stage === "In Production") return "Production Ongoing";
+    if (opportunity.stage === "Ready to Ship") return "Shipment Coordination";
+    
+    // Check for PO received (mock logic - in real app would check for PO data)
+    const hasPO = false; // This would be checked against actual PO data
+    
+    if (hasPO) return "Production Planning";
+    
+    if (sentQuotes.length > 0) {
+      if (hasSamples) return "Buyer Reviewing Samples";
+      return "Need to Confirm MOQ & Delivery Terms";
+    }
+    
+    if (mockQuotes.length > 0 && sentQuotes.length === 0) {
+      return "Waiting on Quote";
+    }
+    
+    return "Clarifying Buyer Intent";
+  };
+
+  const opportunityStatus = calculateOpportunityStatus();
 
   // Mock quotes data
   const mockQuotes: Quote[] = [
@@ -235,12 +261,6 @@ export default function OpportunityDetail() {
     console.log("Send Email clicked");
   };
 
-  const handleSaveNextStep = () => {
-    console.log("Saving next step:", nextStepInput);
-    // In a real app, this would update the opportunity
-    // updateOpportunity(opportunity.id, { nextStep: nextStepInput });
-  };
-
   const TimelineEntry = ({ entry }: { entry: any }) => {
     const IconComponent = entry.icon;
     
@@ -311,10 +331,15 @@ export default function OpportunityDetail() {
           <div className="lg:col-span-2">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Activity Timeline
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Opportunity Feed
+                  </CardTitle>
+                  <div className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                    {opportunityStatus}
+                  </div>
+                </div>
                 <CardDescription>
                   Chronological view of all activity for this opportunity
                 </CardDescription>
@@ -372,32 +397,6 @@ export default function OpportunityDetail() {
                     <p className="text-sm">{opportunity.contact}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Next Step */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Next Step
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  value={nextStepInput}
-                  onChange={(e) => setNextStepInput(e.target.value)}
-                  placeholder="Enter next step..."
-                  className="text-sm"
-                />
-                <Button 
-                  onClick={handleSaveNextStep}
-                  size="sm" 
-                  className="w-full"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Next Step
-                </Button>
               </CardContent>
             </Card>
 
