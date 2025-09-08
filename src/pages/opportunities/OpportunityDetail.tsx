@@ -80,6 +80,16 @@ export default function OpportunityDetail() {
   // Active Lab Dips count for Quick Stats
   const activeLabDipCount = isOPP002 ? 2 : 0;
 
+  // Find the latest quote based on updatedAt
+  const latestQuote = useMemo(() => {
+    if (mockQuotes.length === 0) return null;
+    return mockQuotes.reduce((latest, current) => {
+      const latestDate = new Date(getSortKey(latest));
+      const currentDate = new Date(getSortKey(current));
+      return currentDate > latestDate ? current : latest;
+    });
+  }, [mockQuotes]);
+
   // Mock selection data for Selected Products card
   const mockSelection = isOPP002 
     ? [
@@ -269,6 +279,12 @@ export default function OpportunityDetail() {
 
   const handleSendEmail = () => {
     console.log("Send Email clicked");
+  };
+
+  const handleViewQuote = () => {
+    if (latestQuote) {
+      navigate(`/quote-editor?id=${latestQuote.id}`);
+    }
   };
 
   const TimelineEntry = ({ entry }: { entry: any }) => {
@@ -497,6 +513,71 @@ export default function OpportunityDetail() {
                 ) : (
                   <div className="py-4 text-center text-muted-foreground">
                     <p className="text-sm">No products selected yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Latest Quote */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Latest Quote</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {latestQuote ? (
+                  <>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Quote ID</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{latestQuote.id}</span>
+                          <Badge variant={latestQuote.status === "Sent" ? "default" : "secondary"} className="text-xs">
+                            {latestQuote.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <hr className="border-border" />
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Validity Date</span>
+                        <span className="text-sm">{formatDate(latestQuote.validityDate)}</span>
+                      </div>
+                      
+                      <hr className="border-border" />
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Incoterms</span>
+                        <span className="text-sm">{latestQuote.incoterms}</span>
+                      </div>
+                      
+                      <hr className="border-border" />
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Delivery Terms</span>
+                        <span className="text-sm">{latestQuote.deliveryTerms}</span>
+                      </div>
+                      
+                      <hr className="border-border" />
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Total Value</span>
+                        <span className="text-sm font-medium">{formatCurrency(latestQuote.total)}</span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      onClick={handleViewQuote}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Quote
+                    </Button>
+                  </>
+                ) : (
+                  <div className="py-4 text-center text-muted-foreground">
+                    <p className="text-sm">No quotes available</p>
                   </div>
                 )}
               </CardContent>
