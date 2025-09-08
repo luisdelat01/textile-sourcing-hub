@@ -60,6 +60,45 @@ function OpportunityCard({ opportunity, onCardNavigate }: OpportunityCardProps) 
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  const getStageEmoji = (stage: StageEnum) => {
+    switch (stage) {
+      case "Inbound Request": return "📧";
+      case "Clarify Buyer Intent": return "🔍";
+      case "Samples Sent": return "📦";
+      case "Quote Sent": return "💰";
+      case "PO Received": return "📋";
+      case "In Production": return "🏭";
+      case "Ready to Ship": return "🚚";
+      case "Closed – Delivered": return "✅";
+      default: return "📋";
+    }
+  };
+
+  const getStatusDisplay = (stage: StageEnum, nextStep: string) => {
+    const emoji = getStageEmoji(stage);
+    const shortStatus = stage === "Clarify Buyer Intent" ? "Clarifying Intent" :
+                       stage === "Closed – Delivered" ? "Delivered" : stage;
+    return `${emoji} ${shortStatus}`;
+  };
+
+  // Mock product count and quote value based on existing flags
+  const getProductCount = () => {
+    if (!opportunity.hasQuote && !opportunity.hasSamples) return 0;
+    // Mock different counts based on opportunity ID
+    const mockCounts = { "OPP-001": 5, "OPP-002": 3, "OPP-003": 8, "OPP-004": 2 };
+    return mockCounts[opportunity.id] || 4;
+  };
+
+  const getQuoteValue = () => {
+    if (!opportunity.hasQuote) return null;
+    // Mock different values based on opportunity ID
+    const mockValues = { "OPP-001": 24500, "OPP-002": 18750, "OPP-003": 42300, "OPP-004": 8900 };
+    return mockValues[opportunity.id] || 15000;
+  };
+
+  const productCount = getProductCount();
+  const quoteValue = getQuoteValue();
+
   const handleMouseUp = (e: React.MouseEvent) => {
     // If the initial press was on the drag handle, ignore navigation
     const pressedOnHandle = (downRef.current instanceof Element) && !!(downRef.current as Element).closest('[data-drag-handle]');
@@ -124,11 +163,16 @@ function OpportunityCard({ opportunity, onCardNavigate }: OpportunityCardProps) 
       <Card className="hover:shadow-md transition-shadow group">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">
-              {opportunity.name}
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              <Badge variant={getPriorityVariant(opportunity.priority)} className="text-xs shrink-0">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-sm font-medium leading-tight group-hover:text-primary transition-colors truncate">
+                {opportunity.name}
+              </CardTitle>
+              <div className="text-xs text-muted-foreground mt-1 truncate">
+                {opportunity.brand}
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Badge variant={getPriorityVariant(opportunity.priority)} className="text-xs">
                 {opportunity.priority}
               </Badge>
               <div 
@@ -144,9 +188,6 @@ function OpportunityCard({ opportunity, onCardNavigate }: OpportunityCardProps) 
               </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {opportunity.brand}
-          </div>
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
           {/* Assignee */}
@@ -157,13 +198,41 @@ function OpportunityCard({ opportunity, onCardNavigate }: OpportunityCardProps) 
               </AvatarFallback>
             </Avatar>
             <span className="text-xs text-muted-foreground truncate">
-              {opportunity.assignedRep}
+              👤 {opportunity.assignedRep}
             </span>
           </div>
 
-          {/* Next Step */}
-          <div className="text-xs text-foreground leading-relaxed">
-            <span className="font-medium">Next: </span>
+          {/* Status with Emoji */}
+          <div className="text-xs text-foreground">
+            {getStatusDisplay(opportunity.stage, opportunity.nextStep)}
+          </div>
+
+          {/* Product Count and Quote Value */}
+          <div className="flex items-center gap-2 text-xs">
+            {productCount > 0 && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <span>🧵</span>
+                <span>{productCount} products</span>
+              </div>
+            )}
+            {quoteValue && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <span>💰</span>
+                <span>${quoteValue.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Visual Indicators for Samples and Lab Dips */}
+          <div className="flex items-center gap-2">
+            {opportunity.hasSamples && <span className="text-sm">📦</span>}
+            {opportunity.hasLabDips && <span className="text-sm">🧪</span>}
+            {opportunity.missingSpecs && <span className="text-sm" title="Missing Specs">⚠️</span>}
+          </div>
+
+          {/* Next Step - Condensed */}
+          <div className="text-xs leading-relaxed">
+            <span className="text-muted-foreground">Next: </span>
             {isEditing ? (
               <Input
                 value={editValue}
@@ -176,48 +245,15 @@ function OpportunityCard({ opportunity, onCardNavigate }: OpportunityCardProps) 
               />
             ) : (
               <span 
-                className="truncate block cursor-pointer hover:bg-muted/50 px-1 py-0.5 rounded"
+                className="text-foreground truncate cursor-pointer hover:bg-muted/50 px-1 py-0.5 rounded inline-block max-w-full"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNextStepEdit();
                 }}
+                title={opportunity.nextStep}
               >
                 {opportunity.nextStep}
               </span>
-            )}
-          </div>
-
-          {/* Status Badges */}
-          <div className="flex flex-wrap gap-1">
-            {opportunity.missingSpecs && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Missing Specs
-              </Badge>
-            )}
-            {opportunity.hasSamples && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1">
-                <Package className="h-3 w-3" />
-                Samples
-              </Badge>
-            )}
-            {opportunity.hasQuote && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1">
-                <FileText className="h-3 w-3" />
-                Quote
-              </Badge>
-            )}
-            {opportunity.hasPO && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1">
-                <ShoppingCart className="h-3 w-3" />
-                PO
-              </Badge>
-            )}
-            {opportunity.hasLabDips && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1">
-                <TestTube className="h-3 w-3" />
-                Lab Dips
-              </Badge>
             )}
           </div>
         </CardContent>
