@@ -8,6 +8,7 @@ import { StagePill, type StageType } from "@/components/StagePill";
 import { type Quote } from "@/types/quote";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Save, TrendingUp, Package, FileText, Clock, Mail, User, Upload, PlusSquare } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useOpportunities } from "@/stores/useOpportunities";
 
 export default function OpportunityDetail() {
@@ -113,6 +114,16 @@ export default function OpportunityDetail() {
       updatedAt: "2024-09-03T11:20:00Z"
     }
   ];
+
+  // Calculate quote status for Quick Stats
+  const quoteStatus = useMemo(() => {
+    if (mockQuotes.length === 0) return "Waiting on Quote";
+    
+    const hasSentQuotes = mockQuotes.some(q => q.status === "Sent");
+    if (hasSentQuotes) return "Sent";
+    
+    return "Draft";
+  }, [mockQuotes]);
 
   // Calculate smart status based on opportunity state
   const opportunityStatus = useMemo(() => {
@@ -403,19 +414,43 @@ export default function OpportunityDetail() {
               <CardHeader>
                 <CardTitle className="text-lg">Quick Stats</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Quotes Sent</span>
-                  <span className="text-sm font-medium">
-                    {mockQuotes.filter(q => q.status === "Sent").length}
-                  </span>
+              <CardContent className="space-y-0">
+                {/* Quote Status Row */}
+                <div className="flex justify-between items-center gap-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm font-medium">Quote Status</span>
+                  </div>
+                  <Badge variant={quoteStatus === "Sent" ? "default" : quoteStatus === "Draft" ? "secondary" : "outline"} className="text-xs">
+                    {quoteStatus}
+                  </Badge>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Samples Pending</span>
+                
+                <hr className="border-border" />
+                
+                {/* Active Lab Dips Row */}
+                <div className="flex justify-between items-center gap-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm font-medium">Active Lab Dips</span>
+                  </div>
                   <span className="text-sm font-medium">3</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Value</span>
+                
+                <hr className="border-border" />
+                
+                {/* Total Value Row */}
+                <div className="flex justify-between items-center gap-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm font-medium">Total Value</span>
+                  </div>
                   <span className="text-sm font-medium">
                     {formatCurrency(mockQuotes.reduce((sum, q) => sum + q.total, 0))}
                   </span>
