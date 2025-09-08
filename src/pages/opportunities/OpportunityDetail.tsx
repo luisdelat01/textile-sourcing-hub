@@ -8,8 +8,9 @@ import { StagePill, type StageType } from "@/components/StagePill";
 import { QuoteCard } from "@/components/QuoteCard";
 import { type Quote } from "@/types/quote";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Save, TrendingUp, Package, FileText, Clock, Mail, User, Upload, PlusSquare } from "lucide-react";
+import { Save, TrendingUp, Package, FileText, Clock, Mail, User, Upload, PlusSquare, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useOpportunities } from "@/stores/useOpportunities";
 
 export default function OpportunityDetail() {
@@ -198,6 +199,43 @@ export default function OpportunityDetail() {
     }), [mockQuotes]
   );
 
+  const latestQuote = sortedQuotes[0];
+
+  // Contextual banner logic
+  const getContextualBanner = () => {
+    if (opportunity.stage === "Clarify Buyer Intent") {
+      return {
+        message: "Waiting on quote to be generated. Review selection and pricing.",
+        show: true
+      };
+    }
+    
+    if (quoteStatus === "Sent") {
+      return {
+        message: "Quote sent. Waiting for buyer feedback on samples and MOQ.",
+        show: true
+      };
+    }
+    
+    if (opportunity.stage === "PO Received") {
+      return {
+        message: "PO received! Make sure production plan and lab dips are confirmed.",
+        show: true
+      };
+    }
+    
+    if (latestQuote?.status === "Draft") {
+      return {
+        message: "You have a draft quote. Finish editing and send when ready.",
+        show: true
+      };
+    }
+
+    return { message: "", show: false };
+  };
+
+  const contextualBanner = getContextualBanner();
+
 // Create unified timeline combining all activity types
   const timelineEntries = useMemo(() => {
     const entries = [];
@@ -369,6 +407,18 @@ export default function OpportunityDetail() {
           </div>
         </div>
       </div>
+
+      {/* Contextual Banner */}
+      {contextualBanner.show && (
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
+              {contextualBanner.message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Two-Column Layout */}
       <div className="max-w-7xl mx-auto px-6 py-6">
