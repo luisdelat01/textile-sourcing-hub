@@ -125,44 +125,59 @@ export default function QuoteEditor() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [selectedOpportunity, setSelectedOpportunity] = useState<string>("");
   
   const opportunityId = searchParams.get("id");
   const mockSelection = opportunityId ? getMockSelection(opportunityId) : null;
   
-  // If no opportunity ID, show selection screen
+  // If no opportunity ID, show empty state
   if (!opportunityId) {
     const opportunityOptions = [
-      { id: "OPP-001", name: "Premium Denim Collection" },
-      { id: "OPP-002", name: "Cotton Basics Collection" },
-      { id: "OPP-003", name: "Luxury Silk Selection" }
+      { id: "OPP-002", name: "FW26 Development — OPP-002" },
+      { id: "OPP-003", name: "Luxury Silk Import — OPP-003" }
     ];
 
-    const handleOpportunitySelect = (selectedId: string) => {
-      navigate(`/quote-editor?id=${selectedId}`);
+    const handleContinue = () => {
+      if (selectedOpportunity) {
+        navigate(`/quote-editor?id=${selectedOpportunity}`);
+      }
     };
 
     return (
-      <div className="max-w-md mx-auto px-6 py-12">
-        <Card>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle>Select an Opportunity to Quote</CardTitle>
-            <CardDescription>
-              Choose an opportunity to create a quote for
+            <CardTitle className="text-xl">No Quote Selected</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Please select or create a quote to get started.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Select onValueChange={handleOpportunitySelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an opportunity" />
-              </SelectTrigger>
-              <SelectContent>
-                {opportunityOptions.map(option => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.id} – {option.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Select Opportunity
+              </label>
+              <Select value={selectedOpportunity} onValueChange={setSelectedOpportunity}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Choose an opportunity" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-50">
+                  {opportunityOptions.map(option => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button 
+              onClick={handleContinue} 
+              disabled={!selectedOpportunity}
+              className="w-full"
+            >
+              Continue
+            </Button>
           </CardContent>
         </Card>
       </div>
