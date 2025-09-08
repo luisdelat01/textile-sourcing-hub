@@ -31,34 +31,6 @@ export default function OpportunityDetail() {
     ]
   };
 
-  // Calculate smart status based on opportunity state
-  const calculateOpportunityStatus = () => {
-    const sentQuotes = mockQuotes.filter(q => q.status === "Sent");
-    const hasSamples = mockQuotes.some(q => q.lines.some(l => l.labDipRequired));
-    
-    // Check for later stages based on opportunity stage
-    if (opportunity.stage === "In Production") return "Production Ongoing";
-    if (opportunity.stage === "Ready to Ship") return "Shipment Coordination";
-    
-    // Check for PO received (mock logic - in real app would check for PO data)
-    const hasPO = false; // This would be checked against actual PO data
-    
-    if (hasPO) return "Production Planning";
-    
-    if (sentQuotes.length > 0) {
-      if (hasSamples) return "Buyer Reviewing Samples";
-      return "Need to Confirm MOQ & Delivery Terms";
-    }
-    
-    if (mockQuotes.length > 0 && sentQuotes.length === 0) {
-      return "Waiting on Quote";
-    }
-    
-    return "Clarifying Buyer Intent";
-  };
-
-  const opportunityStatus = calculateOpportunityStatus();
-
   // Mock quotes data
   const mockQuotes: Quote[] = [
     {
@@ -141,6 +113,32 @@ export default function OpportunityDetail() {
       updatedAt: "2024-09-03T11:20:00Z"
     }
   ];
+
+  // Calculate smart status based on opportunity state
+  const opportunityStatus = useMemo(() => {
+    const sentQuotes = mockQuotes.filter(q => q.status === "Sent");
+    const hasSamples = mockQuotes.some(q => q.lines.some(l => l.labDipRequired));
+    
+    // Check for later stages based on opportunity stage
+    if (opportunity.stage === "In Production") return "Production Ongoing";
+    if (opportunity.stage === "Ready to Ship") return "Shipment Coordination";
+    
+    // Check for PO received (mock logic - in real app would check for PO data)
+    const hasPO = false; // This would be checked against actual PO data
+    
+    if (hasPO) return "Production Planning";
+    
+    if (sentQuotes.length > 0) {
+      if (hasSamples) return "Buyer Reviewing Samples";
+      return "Need to Confirm MOQ & Delivery Terms";
+    }
+    
+    if (mockQuotes.length > 0 && sentQuotes.length === 0) {
+      return "Waiting on Quote";
+    }
+    
+    return "Clarifying Buyer Intent";
+  }, [mockQuotes, opportunity.stage]);
 
   // Sort quotes with fallback logic
   const getSortKey = (quote: Quote) => {
