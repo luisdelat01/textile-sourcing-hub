@@ -16,141 +16,76 @@ export default function OpportunityDetail() {
   const navigate = useNavigate();
   const { getById } = useOpportunities();
 
+  const isOPP002 = id === "OPP-002";
+  const isOPP003 = id === "OPP-003";
+
   // Get opportunity from store or fallback to mock
-  const opportunity = getById(id || "") || {
-    id: id || "OPP-004",
-    name: "FW26 Development",
-    company: "Tintex",
-    contact: "dev@client.com", 
-    brand: "Fleur de Mal",
-    stage: "Samples Sent" as StageType,
-    nextStep: "Waiting for sample feedback",
-    timeline: [
-      { date: "2024-09-10", event: "Stage Changed", description: "Moved to Samples Sent" },
-      { date: "2024-09-08", event: "Quote Sent", description: "Shared pricing and MOQ details" },
-      { date: "2024-09-05", event: "Next Step Updated", description: "Prepare sample shipment" },
-      { date: "2024-09-01", event: "Initial Contact", description: "Opportunity created from inbound inquiry" }
-    ]
-  };
+  let opportunity = getById(id || "");
+  
+  // Replace or override opportunity if mock fallback is being used
+  if (!opportunity || isOPP002 || isOPP003) {
+    opportunity = {
+      id: id || "OPP-002",
+      name: isOPP003 ? "Luxury Silk Import" : "Organic Cotton Sourcing",
+      company: isOPP003 ? "Premium Textiles Ltd" : "EcoWear Brand",
+      contact: isOPP003 ? "emma@premiumtextiles.com" : "mike@ecowear.com",
+      brand: isOPP003 ? "Silken Dreams" : "GreenFashion",
+      stage: (isOPP003 ? "Clarify Buyer Intent" : "PO Received") as StageType,
+      priority: isOPP003 ? "High" : "Medium",
+      updated: "2024-09-14",
+      nextStep: isOPP003 ? "Waiting on quote" : "Confirm production plan",
+      source: "Referral",
+      assignedRep: isOPP003 ? "David Park" : "Lisa Wong",
+      timeline: [
+        { date: "2024-09-10", event: "Initial Contact", description: "Contacted via referral." },
+        { date: "2024-09-12", event: "Requirements Discussion", description: "Shared MOQ + specs" },
+        { date: "2024-09-14", event: "Next Step Updated", description: isOPP003 ? "Waiting on quote" : "Confirm production" },
+      ],
+      missingSpecs: isOPP003,
+      hasSamples: isOPP002,
+      hasQuote: isOPP002,
+      hasPO: isOPP002,
+      hasLabDips: isOPP002
+    };
+  }
 
   // Mock quotes data
-  const mockQuotes: Quote[] = [
-    {
-      id: "Q-001",
-      selectionId: "S-001",
-      lines: [
+  const mockQuotes: Quote[] = isOPP002
+    ? [
         {
-          productId: "P-001",
-          name: "Cotton Poplin 120GSM",
-          unit: "meters",
-          quantity: 1000,
-          price: 4.50,
-          labDipRequired: true
-        },
-        {
-          productId: "P-002", 
-          name: "Organic Cotton Jersey 160GSM",
-          unit: "meters",
-          quantity: 500,
-          price: 6.20,
-          labDipRequired: true
+          id: "Q-PO-002",
+          selectionId: "S-PO-002",
+          lines: [
+            { productId: "P-COT-01", name: "Organic Cotton 150GSM", unit: "meters", quantity: 600, price: 5.20, labDipRequired: true },
+            { productId: "P-COT-02", name: "Cotton Twill 180GSM", unit: "meters", quantity: 400, price: 4.90, labDipRequired: true }
+          ],
+          validityDate: "2024-10-01",
+          deliveryTerms: "3-5 weeks",
+          incoterms: "FOB",
+          total: 5480,
+          status: "Sent",
+          createdAt: "2024-09-05T09:00:00Z",
+          updatedAt: "2024-09-06T13:45:00Z"
         }
-      ],
-      validityDate: "2024-10-15",
-      deliveryTerms: "4-6 weeks from order confirmation",
-      incoterms: "FOB",
-      total: 7600,
-      status: "Draft",
-      createdAt: "2024-09-01T10:00:00Z",
-      updatedAt: "2024-09-02T14:30:00Z"
-    },
-    {
-      id: "Q-002",
-      selectionId: "S-001", 
-      lines: [
-        {
-          productId: "P-003",
-          name: "Linen Blend 140GSM",
-          unit: "meters",
-          quantity: 800,
-          price: 8.90,
-          labDipRequired: false
-        }
-      ],
-      validityDate: "2024-09-30",
-      deliveryTerms: "3-4 weeks from order confirmation",
-      incoterms: "EXW",
-      total: 7120,
-      status: "Sent",
-      createdAt: "2024-08-28T09:15:00Z",
-      updatedAt: "2024-08-30T16:45:00Z"
-    },
-    {
-      id: "Q-003",
-      selectionId: "S-002",
-      lines: [
-        {
-          productId: "P-004",
-          name: "Bamboo Terry 180GSM",
-          unit: "meters", 
-          quantity: 1200,
-          price: 5.75,
-          labDipRequired: true
-        },
-        {
-          productId: "P-005",
-          name: "Modal Spandex 200GSM",
-          unit: "meters",
-          quantity: 600,
-          price: 7.80,
-          labDipRequired: false
-        }
-      ],
-      validityDate: "2024-11-01",
-      deliveryTerms: "5-7 weeks from order confirmation", 
-      incoterms: "CIF",
-      total: 11580,
-      status: "Draft",
-      createdAt: "2024-09-02T08:00:00Z",
-      updatedAt: "2024-09-03T11:20:00Z"
-    }
-  ];
+      ]
+    : [];
 
-  // Calculate quote status for Quick Stats
-  const quoteStatus = useMemo(() => {
-    if (mockQuotes.length === 0) return "Waiting on Quote";
-    
-    const hasSentQuotes = mockQuotes.some(q => q.status === "Sent");
-    if (hasSentQuotes) return "Sent";
-    
-    return "Draft";
-  }, [mockQuotes]);
+  // Quote Status Badge Logic
+  const quoteStatus = isOPP003
+    ? "Waiting on Quote"
+    : isOPP002
+      ? "Sent"
+      : "Draft";
 
-  // Calculate smart status based on opportunity state
-  const opportunityStatus = useMemo(() => {
-    const sentQuotes = mockQuotes.filter(q => q.status === "Sent");
-    const hasSamples = mockQuotes.some(q => q.lines.some(l => l.labDipRequired));
-    
-    // Check for later stages based on opportunity stage
-    if (opportunity.stage === "In Production") return "Production Ongoing";
-    if (opportunity.stage === "Ready to Ship") return "Shipment Coordination";
-    
-    // Check for PO received (mock logic - in real app would check for PO data)
-    const hasPO = false; // This would be checked against actual PO data
-    
-    if (hasPO) return "Production Planning";
-    
-    if (sentQuotes.length > 0) {
-      if (hasSamples) return "Buyer Reviewing Samples";
-      return "Need to Confirm MOQ & Delivery Terms";
-    }
-    
-    if (mockQuotes.length > 0 && sentQuotes.length === 0) {
-      return "Waiting on Quote";
-    }
-    
-    return "Clarifying Buyer Intent";
-  }, [mockQuotes, opportunity.stage]);
+  // Active Lab Dips count for Quick Stats
+  const activeLabDipCount = isOPP002 ? 2 : 0;
+
+  // Smart status based on opportunity 
+  const opportunityStatus = isOPP003
+    ? "Clarifying Buyer Intent"
+    : isOPP002
+      ? "Production Planning"
+      : "Clarifying Buyer Intent";
 
   // Sort quotes with fallback logic
   const getSortKey = (quote: Quote) => {
@@ -439,7 +374,7 @@ export default function OpportunityDetail() {
                     </div>
                     <span className="text-sm font-medium">Active Lab Dips</span>
                   </div>
-                  <span className="text-sm font-medium">3</span>
+                  <span className="text-sm font-medium">{activeLabDipCount}</span>
                 </div>
                 
                 <hr className="border-border" />
