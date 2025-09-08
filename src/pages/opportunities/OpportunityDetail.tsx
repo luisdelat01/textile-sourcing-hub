@@ -3,14 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { StagePill, type StageType } from "@/components/StagePill";
-import { SpecChecklist, type SpecRecord, type SpecKey } from "@/components/SpecChecklist";
-import { QuoteCard } from "@/components/QuoteCard";
 import { type Quote } from "@/types/quote";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Save, TrendingUp, Package, FileText, ShoppingCart, Plus, Bug, Clock, Mail, User } from "lucide-react";
+import { Save, TrendingUp, Package, FileText, Clock, Mail, User, Upload, PlusSquare } from "lucide-react";
 import { useOpportunities } from "@/stores/useOpportunities";
 
 export default function OpportunityDetail() {
@@ -34,19 +31,7 @@ export default function OpportunityDetail() {
     ]
   };
 
-  const [debugMode, setDebugMode] = useState(false);
-
-  // Specs state management
-  const [specs, setSpecs] = useState<SpecRecord>({
-    fabricType: undefined,
-    weightGSM: undefined,
-    color: undefined,
-    MOQ: undefined,
-    deliveryWindow: undefined,
-    certifications: [],
-    priceTarget: undefined,
-    handFeelNotes: ""
-  });
+  const [nextStepInput, setNextStepInput] = useState(opportunity.nextStep || "");
 
   // Mock quotes data
   const mockQuotes: Quote[] = [
@@ -144,39 +129,154 @@ export default function OpportunityDetail() {
     }), [mockQuotes]
   );
 
-  // Mock metrics
-  const metrics = {
-    missingSpecs: Object.values(specs).filter(value => 
-      value === undefined || 
-      value === "" || 
-      (Array.isArray(value) && value.length === 0)
-    ).length,
-    activeSamples: 3,
-    openQuotes: 2,
-    openPOs: 1
-  };
+// Create unified timeline combining all activity types
+  const timelineEntries = useMemo(() => {
+    const entries = [];
+
+    // Add stage changes from opportunity timeline
+    if (opportunity.timeline) {
+      opportunity.timeline.forEach(event => {
+        entries.push({
+          id: `timeline-${event.date}-${event.event}`,
+          date: event.date,
+          type: 'stage_change',
+          title: event.event,
+          description: event.description,
+          icon: TrendingUp,
+          sender: null
+        });
+      });
+    }
+
+    // Add mock emails
+    const mockEmails = [
+      {
+        id: 'email-1',
+        date: '2024-09-03',
+        sender: 'Sophie Green',
+        subject: 'Re: Lab Dip Colors for AW25',
+        preview: 'The lab dip samples look great! Can we proceed with the bulk order? Looking forward to your confirmation on the delivery timeline.'
+      },
+      {
+        id: 'email-2', 
+        date: '2024-09-01',
+        sender: 'Marcus Chen',
+        subject: 'Quote Request Follow-up',
+        preview: 'Following up on the fabric pricing we discussed at the meeting. Can you provide updated MOQ requirements?'
+      },
+      {
+        id: 'email-3',
+        date: '2024-08-28',
+        sender: 'Alice Rivera', 
+        subject: 'Initial Requirements',
+        preview: 'Thank you for the detailed spec sheet. We\'re excited to move forward! The fabric samples you sent match our vision perfectly.'
+      },
+      {
+        id: 'email-4',
+        date: '2024-08-25',
+        sender: 'David Kim',
+        subject: 'Project Kickoff', 
+        preview: 'Welcome to the FW26 development project! Attached are the initial brand guidelines and seasonal color palette.'
+      }
+    ];
+
+    mockEmails.forEach(email => {
+      entries.push({
+        id: email.id,
+        date: email.date,
+        type: 'email',
+        title: email.subject,
+        description: email.preview,
+        icon: Mail,
+        sender: email.sender
+      });
+    });
+
+    // Add quote events
+    mockQuotes.forEach(quote => {
+      if (quote.status === 'Sent') {
+        entries.push({
+          id: `quote-${quote.id}`,
+          date: quote.updatedAt?.split('T')[0] || quote.createdAt?.split('T')[0] || '2024-09-01',
+          type: 'quote_sent',
+          title: `Quote ${quote.id} Sent`,
+          description: `Pricing proposal sent - ${formatCurrency(quote.total)} total value`,
+          icon: FileText,
+          sender: null
+        });
+      }
+    });
+
+    // Add mock selection events
+    entries.push({
+      id: 'selection-1',
+      date: '2024-08-30',
+      type: 'selection_created',
+      title: 'Selection S-001 Created',
+      description: 'Initial fabric selection with 3 cotton options for client review',
+      icon: Package,
+      sender: null
+    });
+
+    // Sort by date (newest first)
+    return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [opportunity.timeline, mockQuotes]);
 
 
   const handleCreateSelection = () => {
     console.log("Create Selection clicked");
   };
 
-  const handleGenerateQuote = () => {
-    console.log("Generate Quote clicked");
-  };
-
   const handleUploadPO = () => {
     console.log("Upload PO clicked");
   };
 
-  const handleNewQuote = () => {
-    console.log("Creating new quote from latest selection");
-    navigate("/quote-editor");
+  const handleSendEmail = () => {
+    console.log("Send Email clicked");
   };
 
-  const handleQuoteClick = (quote: Quote) => {
-    console.log("Opening quote:", quote.id);
-    navigate(`/quote-editor?id=${quote.id}`);
+  const handleSaveNextStep = () => {
+    console.log("Saving next step:", nextStepInput);
+    // In a real app, this would update the opportunity
+    // updateOpportunity(opportunity.id, { nextStep: nextStepInput });
+  };
+
+  const TimelineEntry = ({ entry }: { entry: any }) => {
+    const IconComponent = entry.icon;
+    
+    return (
+      <div className="flex gap-4 pb-6">
+        <div className="flex flex-col items-center">
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <IconComponent className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="w-px bg-border flex-1 mt-2"></div>
+        </div>
+        <div className="flex-1">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  {entry.sender && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <User className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {entry.sender}
+                      </span>
+                    </div>
+                  )}
+                  <h4 className="font-medium text-sm">{entry.title}</h4>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(entry.date)}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">{entry.description}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -199,460 +299,168 @@ export default function OpportunityDetail() {
             <div className="flex items-center gap-4">
               <StagePill stage={opportunity.stage as StageType} />
             </div>
-
-            {/* Right Block */}
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleCreateSelection}>
-                Create Selection
-              </Button>
-              <Button variant="outline" onClick={handleGenerateQuote}>
-                Generate Quote
-              </Button>
-              <Button onClick={handleUploadPO}>
-                Upload PO
-              </Button>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="selections">Selections</TabsTrigger>
-            <TabsTrigger value="quotes">Quotes</TabsTrigger>
-            <TabsTrigger value="pos">POs</TabsTrigger>
-            <TabsTrigger value="lab-dips">Lab Dips</TabsTrigger>
-            <TabsTrigger value="specifications">Specifications</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <div className="space-y-8">
-              {/* Opportunity Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Opportunity Summary</CardTitle>
-                  <CardDescription>Key metrics and progress indicators</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Current Stage */}
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Current Stage</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-xl font-bold mb-1" aria-live="polite">
-                          {opportunity.stage}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Status in the sourcing workflow
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Next Step */}
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Next Step</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-xl font-bold mb-1" aria-live="polite">
-                          {opportunity.nextStep || "No next step defined"}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Pending action or decision
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Quote Status */}
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Quote Status</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-xl font-bold mb-1" aria-live="polite">
-                          {mockQuotes.filter(q => q.status === "Sent").length > 0 
-                            ? `${mockQuotes.filter(q => q.status === "Sent").length} Sent`
-                            : "No quotes yet"
-                          }
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Pricing proposals shared
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Samples Required */}
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Samples Required</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-xl font-bold mb-1" aria-live="polite">
-                          {metrics.activeSamples ? `${metrics.activeSamples} Pending` : "—"}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Lab dips or swatches in progress
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </CardContent>
-              </Card>
-
-
-              {/* Latest Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Latest Activity
-                    </span>
-                    <Button variant="outline" size="sm">
-                      View Full History
-                    </Button>
-                  </CardTitle>
-                  <CardDescription>Recent updates and milestones</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {opportunity.timeline?.slice(-3).reverse().map((event, index) => (
-                      <div key={index} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                          {index !== 2 && (
-                            <div className="w-px h-full bg-border mt-2" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-medium text-sm">{event.event}</h4>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(event.date)}
-                            </span>
+      {/* Two-Column Layout */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+          
+          {/* Left Column: Timeline */}
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Activity Timeline
+                </CardTitle>
+                <CardDescription>
+                  Chronological view of all activity for this opportunity
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[calc(100vh-320px)] px-6">
+                  <div className="space-y-0">
+                    {timelineEntries.map((entry, index) => (
+                      <div key={entry.id}>
+                        <TimelineEntry entry={entry} />
+                        {index === timelineEntries.length - 1 && (
+                          <div className="flex gap-4">
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                              <div className="w-2 h-2 bg-primary rounded-full"></div>
+                            </div>
+                            <div className="flex-1 pb-4">
+                              <p className="text-sm text-muted-foreground italic">
+                                Beginning of opportunity timeline
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground">{event.description}</p>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Complete Timeline & Linked Emails */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Full Timeline */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Complete Timeline
-                    </CardTitle>
-                    <CardDescription>All activity and stage changes for this opportunity</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {opportunity.timeline?.slice().reverse().map((event, index) => (
-                        <div key={index} className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                            {index !== opportunity.timeline.length - 1 && (
-                              <div className="w-px h-full bg-border mt-2" />
-                            )}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4 className="font-medium text-sm">{event.event}</h4>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDate(event.date)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{event.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-6 pt-4 border-t">
-                      <Button variant="outline" size="sm" className="w-full">
-                        View Full History
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Linked Emails */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Mail className="h-5 w-5" />
-                      Linked Emails
-                    </CardTitle>
-                    <CardDescription>Communication history for this opportunity</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">Sophie Green</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Sep 3, 2025</span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">Re: Lab Dip Colors for AW25</p>
-                        <p className="text-xs text-muted-foreground">
-                          The lab dip samples look great! Can we proceed with the bulk order?
-                          Looking forward to your confirmation on the delivery timeline.
-                        </p>
-                      </div>
-
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">Marcus Chen</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Sep 1, 2025</span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">Quote Request Follow-up</p>
-                        <p className="text-xs text-muted-foreground">
-                          Following up on the fabric pricing we discussed at the meeting.
-                          Can you provide updated MOQ requirements?
-                        </p>
-                      </div>
-
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">Alice Rivera</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Aug 28, 2025</span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">Initial Requirements</p>
-                        <p className="text-xs text-muted-foreground">
-                          Thank you for the detailed spec sheet. We're excited to move forward!
-                          The fabric samples you sent match our vision perfectly.
-                        </p>
-                      </div>
-
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">David Kim</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Aug 25, 2025</span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">Project Kickoff</p>
-                        <p className="text-xs text-muted-foreground">
-                          Welcome to the FW26 development project! Attached are the initial
-                          brand guidelines and seasonal color palette.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="selections">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Selections
-                </CardTitle>
-                <CardDescription>
-                  Fabric selections and samples for this opportunity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Selection Management</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Create and manage fabric selections for your clients. Build sample 
-                    collections, track approvals, and organize your product offerings 
-                    for this opportunity.
-                  </p>
-                </div>
+                </ScrollArea>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-
-          <TabsContent value="quotes">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
+          {/* Right Column: Opportunity Summary */}
+          <div className="space-y-6">
+            
+            {/* Stage & Contact Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Opportunity Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <h2 className="text-2xl font-bold tracking-tight">Quotes</h2>
-                  <p className="text-muted-foreground">
-                    Generated quotes and pricing information for this opportunity
-                  </p>
+                  <StagePill stage={opportunity.stage as StageType} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setDebugMode(!debugMode)}
-                    className="flex items-center gap-2"
-                  >
-                    <Bug className="h-4 w-4" />
-                    DEBUG
-                  </Button>
-                  <Button onClick={handleNewQuote} className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Quote
-                  </Button>
-                </div>
-              </div>
-
-              {debugMode && (
-                <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950">
-                  <CardHeader>
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Bug className="h-4 w-4" />
-                      DEBUG Panel
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Quote Details:</h4>
-                      <div className="grid gap-2 text-xs font-mono">
-                        {sortedQuotes.map((quote) => (
-                          <div key={quote.id} className="flex items-center gap-4 p-2 bg-background rounded border">
-                            <span>ID: {quote.id}</span>
-                            <span>Sort Key: {getSortKey(quote)}</span>
-                            <span>Total: {formatCurrency(quote.total)}</span>
-                            <span>Validity: {formatDate(quote.validityDate)}</span>
-                            <span>Incoterms: {quote.incoterms || "—"}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Validation Checks:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant={sortedQuotes.length > 1 && new Date(getSortKey(sortedQuotes[0])).getTime() >= new Date(getSortKey(sortedQuotes[1])).getTime() ? "default" : "destructive"}>
-                          Sorted DESC by fallback key
-                        </Badge>
-                        <Badge variant={sortedQuotes.every(q => formatCurrency(q.total) !== String(q.total)) ? "default" : "destructive"}>
-                          All totals formatted
-                        </Badge>
-                        <Badge variant={sortedQuotes.every(q => !q.incoterms || ["EXW","FOB","CIF","DAP","DDP"].includes(q.incoterms)) ? "default" : "destructive"}>
-                          Valid incoterms
-                        </Badge>
-                        <Badge variant="default">
-                          Cards focusable & Enter/Space works
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {sortedQuotes.length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                  <Card className="w-full max-w-md text-center">
-                    <CardContent className="pt-6">
-                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No quotes yet</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Create your first quote for this opportunity
-                      </p>
-                      <Button onClick={handleNewQuote} className="flex items-center gap-2 mx-auto">
-                        <Plus className="h-4 w-4" />
-                        New Quote
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {sortedQuotes.map((quote) => (
-                    <QuoteCard
-                      key={quote.id}
-                      quote={quote}
-                      onClick={() => handleQuoteClick(quote)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-
-          <TabsContent value="lab-dips">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Lab Dips
-                </CardTitle>
-                <CardDescription>
-                  Color matching and lab dip approvals
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Lab Dip Tracking</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Lab dip tracking coming soon — you'll be able to monitor lab dip requests, 
-                    status, and approvals here. Track color accuracy, approval workflows, 
-                    and coordinate with production teams.
-                  </p>
+                
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Company</label>
+                    <p className="text-sm">{opportunity.company}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Brand</label>
+                    <p className="text-sm">{opportunity.brand}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Contact</label>
+                    <p className="text-sm">{opportunity.contact}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="pos">
+            {/* Next Step */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Purchase Orders
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Next Step
                 </CardTitle>
-                <CardDescription>
-                  Purchase order management and fulfillment tracking
-                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">PO Management</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Track purchase orders from creation to fulfillment. Monitor 
-                    production status, delivery schedules, and manage order 
-                    documentation for this opportunity.
-                  </p>
+              <CardContent className="space-y-3">
+                <Input
+                  value={nextStepInput}
+                  onChange={(e) => setNextStepInput(e.target.value)}
+                  placeholder="Enter next step..."
+                  className="text-sm"
+                />
+                <Button 
+                  onClick={handleSaveNextStep}
+                  size="sm" 
+                  className="w-full"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Next Step
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Quotes Sent</span>
+                  <span className="text-sm font-medium">
+                    {mockQuotes.filter(q => q.status === "Sent").length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Samples Pending</span>
+                  <span className="text-sm font-medium">3</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Value</span>
+                  <span className="text-sm font-medium">
+                    {formatCurrency(mockQuotes.reduce((sum, q) => sum + q.total, 0))}
+                  </span>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="specifications">
-            <SpecChecklist 
-              specs={specs} 
-              onConfirm={(key, value) => {
-                setSpecs(prev => ({ ...prev, [key]: value }));
-                console.log(`SPEC_FIELD_CONFIRMED: ${key}`, value);
-              }}
-            />
-          </TabsContent>
-        </Tabs>
+            {/* Action Buttons */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  onClick={handleCreateSelection}
+                  className="w-full"
+                  variant="default"
+                >
+                  <PlusSquare className="h-4 w-4 mr-2" />
+                  Create Selection
+                </Button>
+                <Button 
+                  onClick={handleUploadPO}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload PO
+                </Button>
+                <Button 
+                  onClick={handleSendEmail}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Email
+                </Button>
+              </CardContent>
+            </Card>
+
+          </div>
+        </div>
       </div>
     </div>
   );
