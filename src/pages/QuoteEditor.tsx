@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,36 +20,102 @@ import { cn } from "@/lib/utils";
 import { Quote, QuoteLine } from "@/types/quote";
 import { QuotePDFButton } from "@/components/QuotePDFButton";
 
-// Mock current selection data
-const mockSelection = {
-  id: "sel-001",
-  name: "FW26 Development Selection",
-  lines: [
-    {
-      productId: "prod-001",
-      name: "Premium Cotton Poplin",
-      unit: "yard",
-      quantity: 1000,
-      price: 8.50,
-      labDipRequired: true
+// Mock selection data based on opportunity ID
+const getMockSelection = (opportunityId: string) => {
+  const selections = {
+    "OPP-001": {
+      id: "sel-001",
+      name: "Premium Denim Collection",
+      lines: [
+        {
+          productId: "prod-001",
+          name: "Premium Stretch Denim",
+          unit: "yard",
+          quantity: 1500,
+          price: 9.75,
+          labDipRequired: true
+        },
+        {
+          productId: "prod-002",
+          name: "Organic Cotton Denim",
+          unit: "yard", 
+          quantity: 2000,
+          price: 8.25,
+          labDipRequired: true
+        },
+        {
+          productId: "prod-003",
+          name: "Lightweight Chambray",
+          unit: "yard",
+          quantity: 1000,
+          price: 6.50,
+          labDipRequired: false
+        }
+      ]
     },
-    {
-      productId: "prod-002",
-      name: "Stretch Poly Blend",
-      unit: "yard", 
-      quantity: 2500,
-      price: 6.25,
-      labDipRequired: false
+    "OPP-002": {
+      id: "sel-002",
+      name: "Cotton Basics Collection",
+      lines: [
+        {
+          productId: "prod-004",
+          name: "Premium Cotton Poplin",
+          unit: "yard",
+          quantity: 1000,
+          price: 8.50,
+          labDipRequired: true
+        },
+        {
+          productId: "prod-005",
+          name: "Stretch Poly Blend",
+          unit: "yard", 
+          quantity: 2500,
+          price: 6.25,
+          labDipRequired: false
+        },
+        {
+          productId: "prod-006",
+          name: "Organic Cotton Jersey",
+          unit: "yard",
+          quantity: 1800,
+          price: 7.75,
+          labDipRequired: true
+        }
+      ]
     },
-    {
-      productId: "prod-003",
-      name: "Organic Linen Canvas",
-      unit: "meter",
-      quantity: 800,
-      price: 12.75,
-      labDipRequired: true
+    "OPP-003": {
+      id: "sel-003",
+      name: "Luxury Silk Selection",
+      lines: [
+        {
+          productId: "prod-007",
+          name: "Pure Silk Charmeuse",
+          unit: "yard",
+          quantity: 500,
+          price: 24.50,
+          labDipRequired: true
+        },
+        {
+          productId: "prod-008",
+          name: "Silk Organza",
+          unit: "yard", 
+          quantity: 300,
+          price: 18.75,
+          labDipRequired: true
+        },
+        {
+          productId: "prod-009",
+          name: "Mulberry Silk Crepe",
+          unit: "yard",
+          quantity: 400,
+          price: 22.00,
+          labDipRequired: false
+        }
+      ]
     }
-  ]
+  };
+
+  return selections[opportunityId as keyof typeof selections] || selections["OPP-002"];
 };
 
 const unitOptions = ["yard", "meter", "piece", "roll", "kg"];
@@ -56,6 +123,12 @@ const incotermsOptions = ["EXW", "FOB", "CIF", "DAP", "DDP", "FCA"];
 
 export default function QuoteEditor() {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const opportunityId = searchParams.get("id") || "OPP-002";
+  const mockSelection = getMockSelection(opportunityId);
+  
   const [validityDate, setValidityDate] = useState<Date>();
   const [quoteLines, setQuoteLines] = useState<QuoteLine[]>(mockSelection.lines);
   
@@ -133,6 +206,11 @@ export default function QuoteEditor() {
       title: "Quote Sent",
       description: `Quote #${currentQuote.id} has been sent successfully`,
     });
+
+    // Navigate back to opportunity detail page after a short delay
+    setTimeout(() => {
+      navigate(`/opportunities/${opportunityId}`);
+    }, 1500);
   };
 
   return (
@@ -141,7 +219,7 @@ export default function QuoteEditor() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Quote Editor</h1>
         <p className="text-muted-foreground">
-          Create and manage quotes from selections • Selection: {mockSelection.name}
+          Create and manage quotes from selections • {opportunityId} • {mockSelection.name}
         </p>
       </div>
 
