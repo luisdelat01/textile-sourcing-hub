@@ -126,48 +126,8 @@ export default function QuoteEditor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
-  const opportunityId = searchParams.get("id");
-  const mockSelection = opportunityId ? getMockSelection(opportunityId) : null;
-  
-  // If no opportunity ID, show selection screen
-  if (!opportunityId) {
-    const opportunityOptions = [
-      { id: "OPP-001", name: "Premium Denim Collection" },
-      { id: "OPP-002", name: "Cotton Basics Collection" },
-      { id: "OPP-003", name: "Luxury Silk Selection" }
-    ];
-
-    const handleOpportunitySelect = (selectedId: string) => {
-      navigate(`/quote-editor?id=${selectedId}`);
-    };
-
-    return (
-      <div className="max-w-md mx-auto px-6 py-12">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>Select an Opportunity to Quote</CardTitle>
-            <CardDescription>
-              Choose an opportunity to create a quote for
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select onValueChange={handleOpportunitySelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an opportunity" />
-              </SelectTrigger>
-              <SelectContent>
-                {opportunityOptions.map(option => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.id} – {option.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const opportunityId = searchParams.get("id") || "OPP-002";
+  const mockSelection = getMockSelection(opportunityId);
   
   const [validityDate, setValidityDate] = useState<Date>();
   const [quoteLines, setQuoteLines] = useState<QuoteLine[]>(mockSelection.lines);
