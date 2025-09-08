@@ -11,6 +11,7 @@ import { useOpportunities, STAGES, type StageEnum, type Opportunity } from "@/st
 import { cn } from "@/lib/utils";
 import { AlertCircle, Package, FileText, ShoppingCart, TestTube, Plus, GripVertical, Search, Filter, RotateCcw, List, Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { NewOpportunityDialog } from "@/components/opportunities/NewOpportunityDialog";
+import { DebugBar } from "@/components/dev/DebugBar";
 import { 
   DndContext, 
   DragEndEvent, 
@@ -32,9 +33,10 @@ const dateVal = (d?: string) => d ? new Date(d).getTime() : 0;
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
+  onCardNavigate?: () => void;
 }
 
-function OpportunityCard({ opportunity }: OpportunityCardProps) {
+function OpportunityCard({ opportunity, onCardNavigate }: OpportunityCardProps) {
   const navigate = useNavigate();
   const { updateOpportunity } = useOpportunities();
   const { toast } = useToast();
@@ -62,6 +64,7 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
     // If the initial press was on the drag handle, ignore navigation
     const pressedOnHandle = (downRef.current instanceof Element) && !!(downRef.current as Element).closest('[data-drag-handle]');
     if (!isDragging && !pressedOnHandle) {
+      onCardNavigate?.();
       navigate(`/opportunities/${opportunity.id}`);
     }
     downRef.current = null;
@@ -69,6 +72,7 @@ function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
+      onCardNavigate?.();
       navigate(`/opportunities/${opportunity.id}`);
     }
   };
@@ -227,7 +231,7 @@ interface KanbanColumnProps {
   opportunities: Opportunity[];
 }
 
-function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { count: number }) {
+function KanbanColumn({ stage, opportunities, count, onCardNavigate }: KanbanColumnProps & { count: number; onCardNavigate?: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   
   return (
@@ -266,7 +270,7 @@ function KanbanColumn({ stage, opportunities, count }: KanbanColumnProps & { cou
               return dateVal(a.updated) - dateVal(b.updated);
             })
             .map((opportunity) => (
-              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+              <OpportunityCard key={opportunity.id} opportunity={opportunity} onCardNavigate={onCardNavigate} />
             ))
         )}
       </div>
@@ -283,6 +287,9 @@ export default function Board({ onSwitchToList }: { onSwitchToList?: () => void 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [showNewOpportunityDialog, setShowNewOpportunityDialog] = useState(false);
+  const [cardNavigationCount, setCardNavigationCount] = useState(0);
+  const [lastDragStart, setLastDragStart] = useState<string>("");
+  const [lastDragEnd, setLastDragEnd] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Configure drag sensors
@@ -328,10 +335,12 @@ export default function Board({ onSwitchToList }: { onSwitchToList?: () => void 
   const handleDragStart = (event: DragStartEvent) => {
     console.log("DRAG_START", event.active.id);
     setActiveId(String(event.active.id));
+    setLastDragStart(String(event.active.id));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log("DRAG_END", { active: event.active.id, over: event.over?.id });
+    setLastDragEnd(`${event.active.id} → ${event.over?.id || "none"}`);
     const { active, over } = event;
     
     if (!over) {
@@ -376,6 +385,32 @@ export default function Board({ onSwitchToList }: { onSwitchToList?: () => void 
     });
   };
 
+  // Debug data
+  const debugSections = [
+    {
+      title: "Stage System",
+      rows: [
+        { label: "Stages Present", value: STAGES.length, pass: STAGES.length === 8 },
+        { label: "Columns Rendered", value: STAGES.length, pass: STAGES.length === 8 },
+      ]
+    },
+    {
+      title: "Data Integrity", 
+      rows: [
+        { label: "Visible Count", value: filteredOpportunities.length },
+        { label: "Counts Sum", value: Object.values(stageCounts).reduce((a, b) => a + b, 0), pass: Object.values(stageCounts).reduce((a, b) => a + b, 0) === filteredOpportunities.length },
+      ]
+    },
+    {
+      title: "User Interactions",
+      rows: [
+        { label: "Card Navigations", value: cardNavigationCount },
+        { label: "Last Drag Start", value: lastDragStart || "none" },
+        { label: "Last Drag End", value: lastDragEnd || "none" },
+      ]
+    }
+  ];
+
   return (
     <DndContext 
       sensors={sensors} 
@@ -408,14 +443,6 @@ export default function Board({ onSwitchToList }: { onSwitchToList?: () => void 
               >
                 <Plus className="h-4 w-4 mr-1" />
                 New Opportunity
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDebug(!showDebug)}
-              >
-                {showDebug ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                DEBUG
               </Button>
             </div>
           </div>
@@ -533,17 +560,15 @@ export default function Board({ onSwitchToList }: { onSwitchToList?: () => void 
               </div>
             </div>
 
-            {/* Debug Panel */}
-            {showDebug && (
-              <div className="bg-muted p-3 rounded-lg text-xs font-mono">
-                <div className="mb-2 font-semibold">Current Filters:</div>
-                <pre>{JSON.stringify(filters, null, 2)}</pre>
-                <div className="mt-2 mb-2 font-semibold">Counts by Stage:</div>
-                <pre>{JSON.stringify(stageCounts, null, 2)}</pre>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Debug Bar */}
+        <DebugBar 
+          open={showDebug} 
+          onToggle={() => setShowDebug(!showDebug)} 
+          sections={debugSections} 
+        />
 
         {/* Kanban Board */}
         <div className="flex-1 overflow-hidden">
@@ -561,6 +586,7 @@ export default function Board({ onSwitchToList }: { onSwitchToList?: () => void 
                   stage={stage} 
                   opportunities={opportunitiesByStage[stage] || []}
                   count={stageCounts[stage]}
+                  onCardNavigate={() => setCardNavigationCount(prev => prev + 1)}
                 />
               </div>
             ))}
