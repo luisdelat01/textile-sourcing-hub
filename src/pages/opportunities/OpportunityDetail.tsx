@@ -23,11 +23,12 @@ export default function OpportunityDetail() {
     company: "Tintex",
     contact: "dev@client.com", 
     brand: "Fleur de Mal",
-    stage: "Clarify Buyer Intent" as StageType,
-    nextStep: "Confirm MOQ and delivery window",
+    stage: "Samples Sent" as StageType,
+    nextStep: "Waiting for sample feedback",
     timeline: [
-      { date: "2024-09-08", event: "Stage Changed", description: "Moved to Clarify Buyer Intent" },
-      { date: "2024-09-05", event: "Next Step Updated", description: "Updated next step to confirm MOQ" },
+      { date: "2024-09-10", event: "Stage Changed", description: "Moved to Samples Sent" },
+      { date: "2024-09-08", event: "Quote Sent", description: "Shared pricing and MOQ details" },
+      { date: "2024-09-05", event: "Next Step Updated", description: "Prepare sample shipment" },
       { date: "2024-09-01", event: "Initial Contact", description: "Opportunity created from inbound inquiry" }
     ]
   };
