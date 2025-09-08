@@ -238,54 +238,66 @@ export default function OpportunityDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Current Stage */}
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Missing Specs</CardTitle>
+                        <CardTitle className="text-sm font-bold">Current Stage</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold" aria-live="polite">{metrics.missingSpecs}</div>
+                        <div className="mb-2" aria-live="polite">
+                          <StagePill stage={opportunity.stage as StageType} />
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          specifications pending
+                          Status in the sourcing workflow
                         </p>
                       </CardContent>
                     </Card>
                     
+                    {/* Next Step */}
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Samples</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-bold">Next Step</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">{metrics.activeSamples}</div>
+                        <div className="text-lg font-bold mb-1" aria-live="polite">
+                          {opportunity.nextStep || "Not defined"}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          samples in progress
+                          Pending action or decision
                         </p>
                       </CardContent>
                     </Card>
                     
+                    {/* Quote Status */}
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Open Quotes</CardTitle>
+                        <CardTitle className="text-sm font-bold">Quote Status</CardTitle>
                         <FileText className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">{metrics.openQuotes}</div>
+                        <div className="text-2xl font-bold" aria-live="polite">
+                          {mockQuotes.filter(q => q.status === "Sent").length} Sent
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          awaiting response
+                          Pricing proposals shared
                         </p>
                       </CardContent>
                     </Card>
                     
+                    {/* Samples Required */}
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Open POs</CardTitle>
-                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-bold">Samples Required</CardTitle>
+                        <Package className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">{metrics.openPOs}</div>
+                        <div className="text-2xl font-bold" aria-live="polite">
+                          {metrics.activeSamples} Pending
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          in fulfillment
+                          Lab dips or swatches in progress
                         </p>
                       </CardContent>
                     </Card>
