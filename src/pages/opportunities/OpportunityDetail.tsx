@@ -80,6 +80,71 @@ export default function OpportunityDetail() {
   // Active Lab Dips count for Quick Stats
   const activeLabDipCount = isOPP002 ? 2 : 0;
 
+  // Mock selection data for Selected Products card
+  const mockSelection = isOPP002 
+    ? [
+        {
+          id: "P-COT-01",
+          name: "Organic Cotton 150GSM",
+          fabricType: "Cotton",
+          weight: "150 GSM",
+          moq: "500 meters",
+          targetPrice: "$5.20/meter"
+        },
+        {
+          id: "P-COT-02", 
+          name: "Cotton Twill 180GSM",
+          fabricType: "Cotton Twill",
+          weight: "180 GSM",
+          moq: "300 meters",
+          targetPrice: "$4.90/meter"
+        },
+        {
+          id: "P-LIN-01",
+          name: "Linen Blend Natural",
+          fabricType: "Linen Blend",
+          weight: "140 GSM",
+          moq: "400 meters",
+          targetPrice: "$6.80/meter"
+        }
+      ]
+    : isOPP003
+      ? [
+          {
+            id: "P-SLK-01",
+            name: "Mulberry Silk Charmeuse",
+            fabricType: "Silk",
+            weight: "120 GSM",
+            moq: "200 meters",
+            targetPrice: "$18.50/meter"
+          },
+          {
+            id: "P-SLK-02",
+            name: "Silk Georgette Premium",
+            fabricType: "Silk",
+            weight: "100 GSM", 
+            moq: "150 meters",
+            targetPrice: "$22.00/meter"
+          },
+          {
+            id: "P-SLK-03",
+            name: "Dupioni Silk Textured",
+            fabricType: "Silk",
+            weight: "160 GSM",
+            moq: "250 meters",
+            targetPrice: "$16.75/meter"
+          },
+          {
+            id: "P-SLK-04",
+            name: "Habotai Silk Lightweight",
+            fabricType: "Silk",
+            weight: "80 GSM",
+            moq: "300 meters",
+            targetPrice: "$14.20/meter"
+          }
+        ]
+      : [];
+
   // Smart status based on opportunity 
   const opportunityStatus = isOPP003
     ? "Clarifying Buyer Intent"
@@ -391,6 +456,49 @@ export default function OpportunityDetail() {
                     {formatCurrency(mockQuotes.reduce((sum, q) => sum + q.total, 0))}
                   </span>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Selected Products */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Selected Products</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-0">
+                {mockSelection.length > 0 ? (
+                  <>
+                    {mockSelection.map((product, index) => (
+                      <div key={product.id}>
+                        <div className="py-4">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">{product.name}</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                              <div>
+                                <span className="font-medium">Type:</span> {product.fabricType}
+                              </div>
+                              <div>
+                                <span className="font-medium">Weight:</span> {product.weight}
+                              </div>
+                              <div>
+                                <span className="font-medium">MOQ:</span> {product.moq}
+                              </div>
+                              <div>
+                                <span className="font-medium">Price:</span> {product.targetPrice}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {index < mockSelection.length - 1 && (
+                          <hr className="border-border" />
+                        )}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="py-4 text-center text-muted-foreground">
+                    <p className="text-sm">No products selected yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
