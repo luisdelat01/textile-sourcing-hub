@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { CalendarIcon, Send, TestTube, Calculator, FileText } from "lucide-react";
+import { CalendarIcon, Send, TestTube, Calculator, FileText, Package, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Quote, QuoteLine } from "@/types/quote";
 import { QuotePDFButton } from "@/components/QuotePDFButton";
@@ -121,12 +121,73 @@ const getMockSelection = (opportunityId: string) => {
 const unitOptions = ["yard", "meter", "piece", "roll", "kg"];
 const incotermsOptions = ["EXW", "FOB", "CIF", "DAP", "DDP", "FCA"];
 
+const opportunityOptions = [
+  { id: "OPP-001", name: "Premium Denim Collection" },
+  { id: "OPP-002", name: "Cotton Basics Collection" },
+  { id: "OPP-003", name: "Luxury Silk Selection" },
+];
+
+// Empty State Component
+function EmptyState({ navigate }: { navigate: (url: string) => void }) {
+  const [selectedOpportunity, setSelectedOpportunity] = useState<string>("");
+
+  const handleOpportunitySelect = (opportunityId: string) => {
+    navigate(`/quote-editor?id=${opportunityId}`);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/20 px-6">
+      <Card className="w-full max-w-md bg-background border shadow-lg">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <Package className="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle className="text-xl">Select an Opportunity</CardTitle>
+          <CardDescription>
+            To create a quote, start by selecting an opportunity from the list.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Choose Opportunity</label>
+            <Select value={selectedOpportunity} onValueChange={setSelectedOpportunity}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an opportunity..." />
+              </SelectTrigger>
+              <SelectContent>
+                {opportunityOptions.map((opp) => (
+                  <SelectItem key={opp.id} value={opp.id}>
+                    {opp.id}: {opp.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button 
+            className="w-full" 
+            onClick={() => selectedOpportunity && handleOpportunitySelect(selectedOpportunity)}
+            disabled={!selectedOpportunity}
+          >
+            Create Quote
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function QuoteEditor() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  const opportunityId = searchParams.get("id") || "OPP-002";
+  const opportunityId = searchParams.get("id");
+  
+  // If no opportunity ID, show empty state
+  if (!opportunityId) {
+    return <EmptyState navigate={navigate} />;
+  }
+  
   const mockSelection = getMockSelection(opportunityId);
   
   const [validityDate, setValidityDate] = useState<Date>();
@@ -214,314 +275,324 @@ export default function QuoteEditor() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Quote Editor</h1>
-        <p className="text-muted-foreground">
-          Create and manage quotes from selections • {opportunityId} • {mockSelection.name}
-        </p>
-      </div>
+    <div className="min-h-screen bg-muted/20">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Quote Editor</h1>
+          <p className="text-muted-foreground">
+            Create and manage quotes from selections • {opportunityId} • {mockSelection.name}
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Quote Editor */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Quote Lines Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Quote Lines
-              </CardTitle>
-              <CardDescription>
-                Edit quantities, pricing, and specifications for each product
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Lab Dip</TableHead>
-                      <TableHead className="text-right">Line Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {quoteLines.map((line, index) => (
-                      <TableRow key={line.productId}>
-                        <TableCell className="font-medium">
-                          {line.name}
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={line.quantity}
-                            onChange={(e) => updateQuoteLine(index, { 
-                              quantity: parseInt(e.target.value) || 0 
-                            })}
-                            className="w-24"
-                            min="0"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Select 
-                            value={line.unit}
-                            onValueChange={(value) => updateQuoteLine(index, { unit: value })}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Quote Editor */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Quote Lines Table */}
+            <Card className="bg-background border shadow-sm">
+              <CardHeader className="border-b bg-muted/40">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Calculator className="h-5 w-5 text-primary" />
+                  Quote Lines
+                </CardTitle>
+                <CardDescription>
+                  Edit quantities, pricing, and specifications for each product
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="rounded-lg border bg-background">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b">
+                        <TableHead className="font-semibold">Product</TableHead>
+                        <TableHead className="font-semibold">Quantity</TableHead>
+                        <TableHead className="font-semibold">Unit</TableHead>
+                        <TableHead className="font-semibold">Price</TableHead>
+                        <TableHead className="font-semibold">Lab Dip</TableHead>
+                        <TableHead className="text-right font-semibold">Line Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {quoteLines.map((line, index) => (
+                        <TableRow key={line.productId} className="border-b hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-medium py-4">
+                            {line.name}
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <Input
+                              type="number"
+                              value={line.quantity}
+                              onChange={(e) => updateQuoteLine(index, { 
+                                quantity: parseInt(e.target.value) || 0 
+                              })}
+                              className="w-24 h-9"
+                              min="0"
+                            />
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <Select 
+                              value={line.unit}
+                              onValueChange={(value) => updateQuoteLine(index, { unit: value })}
+                            >
+                              <SelectTrigger className="w-24 h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {unitOptions.map(unit => (
+                                  <SelectItem key={unit} value={unit}>
+                                    {unit}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={line.price}
+                              onChange={(e) => updateQuoteLine(index, { 
+                                price: parseFloat(e.target.value) || 0 
+                              })}
+                              className="w-24 h-9"
+                              min="0"
+                            />
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={line.labDipRequired || false}
+                                onCheckedChange={(checked) => updateQuoteLine(index, { 
+                                  labDipRequired: checked 
+                                })}
+                              />
+                              {line.labDipRequired && (
+                                <TestTube className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-medium py-4">
+                            ${(line.quantity * line.price).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Separator className="my-8" />
+
+            {/* Global Quote Settings */}
+            <Card className="bg-background border shadow-sm">
+              <CardHeader className="border-b bg-muted/40">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Settings className="h-5 w-5 text-primary" />
+                  Quote Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure delivery terms and validity
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <Form {...form}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Validity Date */}
+                    <div className="space-y-2">
+                      <FormLabel className="text-sm font-medium">Validity Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal h-10",
+                              !validityDate && "text-muted-foreground"
+                            )}
                           >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {validityDate ? format(validityDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={validityDate}
+                            onSelect={setValidityDate}
+                            initialFocus
+                            className="rounded-md border"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Incoterms */}
+                    <FormField
+                      control={form.control}
+                      name="incoterms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Incoterms</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Select incoterms" />
+                              </SelectTrigger>
+                            </FormControl>
                             <SelectContent>
-                              {unitOptions.map(unit => (
-                                <SelectItem key={unit} value={unit}>
-                                  {unit}
+                              {incotermsOptions.map(term => (
+                                <SelectItem key={term} value={term}>
+                                  {term}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.price}
-                            onChange={(e) => updateQuoteLine(index, { 
-                              price: parseFloat(e.target.value) || 0 
-                            })}
-                            className="w-24"
-                            min="0"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={line.labDipRequired || false}
-                              onCheckedChange={(checked) => updateQuoteLine(index, { 
-                                labDipRequired: checked 
-                              })}
-                            />
-                            {line.labDipRequired && (
-                              <TestTube className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          ${(line.quantity * line.price).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Global Quote Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quote Settings</CardTitle>
-              <CardDescription>
-                Configure delivery terms and validity
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Validity Date */}
-                  <div className="space-y-2">
-                    <FormLabel>Validity Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !validityDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {validityDate ? format(validityDate, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={validityDate}
-                          onSelect={setValidityDate}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
-                  {/* Incoterms */}
-                  <FormField
-                    control={form.control}
-                    name="incoterms"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Incoterms</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Separator className="my-6" />
+
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="deliveryTerms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Delivery Terms</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select incoterms" />
-                            </SelectTrigger>
+                            <Textarea 
+                              placeholder="Enter delivery terms and conditions"
+                              className="min-h-[80px] resize-none"
+                              {...field} 
+                            />
                           </FormControl>
-                          <SelectContent>
-                            {incotermsOptions.map(term => (
-                              <SelectItem key={term} value={term}>
-                                {term}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="mt-4">
-                  <FormField
-                    control={form.control}
-                    name="deliveryTerms"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Delivery Terms</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter delivery terms and conditions"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Additional Notes</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Add any additional notes or comments"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Summary Sidebar */}
-        <div className="space-y-6">
-          {/* Quote Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Quote Summary
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant={quoteStatus === "Sent" ? "default" : "secondary"}>
-                  {quoteStatus}
-                </Badge>
-                <Badge variant="outline">
-                  {quoteLines.length} line{quoteLines.length !== 1 ? 's' : ''}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Line Items Summary */}
-              <div className="space-y-2">
-                {quoteLines.map((line, index) => (
-                  <div key={line.productId} className="flex justify-between text-sm">
-                    <span className="truncate mr-2">{line.name}</span>
-                    <span className="font-medium">
-                      ${(line.quantity * line.price).toLocaleString()}
-                    </span>
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Additional Notes</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Add any additional notes or comments"
+                              className="min-h-[80px] resize-none"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                ))}
-              </div>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
 
-              <Separator />
-              
-              {/* Totals */}
-              <div className="space-y-2">
-                <div className="flex justify-between font-medium">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+          {/* Right Column - Summary Sidebar */}
+          <div className="space-y-6">
+            {/* Quote Summary */}
+            <Card className="bg-background border shadow-sm sticky top-6">
+              <CardHeader className="border-b bg-muted/40">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Quote Summary
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant={quoteStatus === "Sent" ? "default" : "secondary"}>
+                    {quoteStatus}
+                  </Badge>
+                  <Badge variant="outline">
+                    {quoteLines.length} line{quoteLines.length !== 1 ? 's' : ''}
+                  </Badge>
                 </div>
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span>${total.toLocaleString()}</span>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {/* Line Items Summary */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Line Items</h4>
+                  {quoteLines.map((line, index) => (
+                    <div key={line.productId} className="flex justify-between items-center text-sm bg-muted/30 p-2 rounded">
+                      <span className="truncate mr-2 font-medium">{line.name}</span>
+                      <span className="font-semibold">
+                        ${(line.quantity * line.price).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </div>
 
-              <Separator />
-
-              {/* Lab Dips Summary */}
-              {quoteLines.some(line => line.labDipRequired) && (
-                <div className="text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <TestTube className="h-4 w-4" />
-                    Lab Dips Required
+                <Separator />
+                
+                {/* Totals */}
+                <div className="space-y-3">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span className="font-medium">${subtotal.toLocaleString()}</span>
                   </div>
-                  {quoteLines
-                    .filter(line => line.labDipRequired)
-                    .map(line => (
-                      <div key={line.productId} className="ml-6 text-xs">
-                        {line.name}
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total</span>
+                    <span>${total.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Lab Dips Summary */}
+                {quoteLines.some(line => line.labDipRequired) && (
+                  <>
+                    <div className="text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                        <TestTube className="h-4 w-4" />
+                        <span className="font-medium">Lab Dips Required</span>
                       </div>
-                    ))}
+                      <div className="space-y-1">
+                        {quoteLines
+                          .filter(line => line.labDipRequired)
+                          .map(line => (
+                            <div key={line.productId} className="ml-6 text-xs text-muted-foreground bg-primary/5 p-1 rounded">
+                              {line.name}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Actions */}
+                <div className="space-y-3 pt-2">
+                  <QuotePDFButton
+                    quote={currentQuote}
+                    variant="outline"
+                    onGenerated={(url) => console.log("PDF generated:", url)}
+                  />
+                  
+                  <Button 
+                    className="w-full h-11" 
+                    onClick={handleSendQuote}
+                    disabled={!canSendQuote || quoteStatus === "Sent"}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {quoteStatus === "Sent" ? "Quote Sent" : "Send Quote"}
+                  </Button>
+
+                  {!canSendQuote && quoteStatus !== "Sent" && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Complete all required fields to send quote
+                    </p>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <QuotePDFButton
-                quote={currentQuote}
-                variant="outline"
-                onGenerated={(url) => console.log("PDF generated:", url)}
-              />
-              
-              <Button 
-                className="w-full" 
-                onClick={handleSendQuote}
-                disabled={!canSendQuote || quoteStatus === "Sent"}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {quoteStatus === "Sent" ? "Quote Sent" : "Send Quote"}
-              </Button>
-
-              {!canSendQuote && quoteStatus !== "Sent" && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Complete all required fields to send quote
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
