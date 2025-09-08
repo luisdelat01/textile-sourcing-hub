@@ -10,23 +10,31 @@ import { SpecChecklist, type SpecRecord, type SpecKey } from "@/components/SpecC
 import { QuoteCard } from "@/components/QuoteCard";
 import { type Quote } from "@/types/quote";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Save, TrendingUp, Package, FileText, ShoppingCart, Plus, Bug } from "lucide-react";
+import { Save, TrendingUp, Package, FileText, ShoppingCart, Plus, Bug, Clock, Mail, User } from "lucide-react";
+import { useOpportunities } from "@/stores/useOpportunities";
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getById } = useOpportunities();
 
-  // Mock data
-  const mock = {
+  // Get opportunity from store or fallback to mock
+  const opportunity = getById(id || "") || {
+    id: id || "OPP-004",
     name: "FW26 Development",
     company: "Tintex",
+    contact: "dev@client.com", 
     brand: "Fleur de Mal",
-    contactEmail: "dev@client.com",
     stage: "Clarify Buyer Intent" as StageType,
-    nextStep: "Confirm MOQ and delivery window"
+    nextStep: "Confirm MOQ and delivery window",
+    timeline: [
+      { date: "2024-09-08", event: "Stage Changed", description: "Moved to Clarify Buyer Intent" },
+      { date: "2024-09-05", event: "Next Step Updated", description: "Updated next step to confirm MOQ" },
+      { date: "2024-09-01", event: "Initial Contact", description: "Opportunity created from inbound inquiry" }
+    ]
   };
 
-  const [nextStep, setNextStep] = useState(mock.nextStep);
+  const [nextStep, setNextStep] = useState(opportunity.nextStep || "");
   const [lastSpecChange, setLastSpecChange] = useState<{ key: SpecKey; previousValue: any } | null>(null);
   const [debugMode, setDebugMode] = useState(false);
 
@@ -203,16 +211,16 @@ export default function OpportunityDetail() {
             {/* Left Block */}
             <div className="flex-1 min-w-0">
               <h2 className="text-2xl font-semibold text-foreground mb-1">
-                {mock.name}
+                {opportunity.name}
               </h2>
               <p className="text-muted-foreground text-sm">
-                {mock.company} • {mock.brand} • {mock.contactEmail}
+                {opportunity.company} • {opportunity.brand} • {opportunity.contact}
               </p>
             </div>
 
             {/* Center Block */}
             <div className="flex items-center gap-4">
-              <StagePill stage={mock.stage} />
+              <StagePill stage={opportunity.stage as StageType} />
               <div className="flex items-center gap-2">
                 <Input
                   value={nextStep}
@@ -312,11 +320,104 @@ export default function OpportunityDetail() {
               </div>
 
               {/* Spec Checklist */}
-            <SpecChecklist 
-              specs={specs} 
-              onConfirm={handleSpecConfirm}
-              onUndo={lastSpecChange ? handleUndo : undefined}
-            />
+              <SpecChecklist 
+                specs={specs} 
+                onConfirm={handleSpecConfirm}
+                onUndo={lastSpecChange ? handleUndo : undefined}
+              />
+
+              {/* Timeline & Emails Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Timeline */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Timeline
+                    </CardTitle>
+                    <CardDescription>Recent activity and stage changes</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {opportunity.timeline?.slice().reverse().map((event, index) => (
+                        <div key={index} className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                            {index !== opportunity.timeline.length - 1 && (
+                              <div className="w-px h-full bg-border mt-2" />
+                            )}
+                          </div>
+                          <div className="flex-1 pb-4">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-medium text-sm">{event.event}</h4>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(event.date)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{event.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Linked Emails */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Mail className="h-5 w-5" />
+                      Linked Emails
+                    </CardTitle>
+                    <CardDescription>Recent communication history</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">Sophie Green</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Sep 3, 2025</span>
+                        </div>
+                        <p className="text-sm font-medium mb-1">Re: Lab Dip Colors for AW25</p>
+                        <p className="text-xs text-muted-foreground">
+                          The lab dip samples look great! Can we proceed with the bulk order?
+                        </p>
+                      </div>
+
+                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">Marcus Chen</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Sep 1, 2025</span>
+                        </div>
+                        <p className="text-sm font-medium mb-1">Quote Request Follow-up</p>
+                        <p className="text-xs text-muted-foreground">
+                          Following up on the fabric pricing we discussed at the meeting.
+                        </p>
+                      </div>
+
+                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">Alice Rivera</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Aug 28, 2025</span>
+                        </div>
+                        <p className="text-sm font-medium mb-1">Initial Requirements</p>
+                        <p className="text-xs text-muted-foreground">
+                          Thank you for the detailed spec sheet. We're excited to move forward!
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
 
