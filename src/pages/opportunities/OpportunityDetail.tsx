@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StagePill, type StageType } from "@/components/StagePill";
+import { QuoteCard } from "@/components/QuoteCard";
 import { type Quote } from "@/types/quote";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Save, TrendingUp, Package, FileText, Clock, Mail, User, Upload, PlusSquare } from "lucide-react";
@@ -68,7 +69,39 @@ export default function OpportunityDetail() {
           updatedAt: "2024-09-06T13:45:00Z"
         }
       ]
-    : [];
+    : isOPP003
+      ? [
+          {
+            id: "Q-SLK-001",
+            selectionId: "S-SLK-001",
+            lines: [
+              { productId: "P-SLK-01", name: "Mulberry Silk Charmeuse", unit: "meters", quantity: 200, price: 18.50, labDipRequired: true },
+              { productId: "P-SLK-02", name: "Silk Georgette Premium", unit: "meters", quantity: 150, price: 22.00, labDipRequired: false }
+            ],
+            validityDate: "2024-09-25",
+            deliveryTerms: "4-6 weeks",
+            incoterms: "CIF",
+            total: 7000,
+            status: "Draft",
+            createdAt: "2024-09-12T14:30:00Z",
+            updatedAt: "2024-09-13T16:20:00Z"
+          },
+          {
+            id: "Q-SLK-002",
+            selectionId: "S-SLK-002", 
+            lines: [
+              { productId: "P-SLK-03", name: "Dupioni Silk Textured", unit: "meters", quantity: 250, price: 16.75, labDipRequired: true }
+            ],
+            validityDate: "2024-09-30",
+            deliveryTerms: "5-7 weeks",
+            incoterms: "FOB",
+            total: 4187.50,
+            status: "Sent",
+            createdAt: "2024-09-08T11:15:00Z",
+            updatedAt: "2024-09-10T09:45:00Z"
+          }
+        ]
+      : [];
 
   // Quote Status Badge Logic
   const quoteStatus = isOPP003
@@ -79,16 +112,6 @@ export default function OpportunityDetail() {
 
   // Active Lab Dips count for Quick Stats
   const activeLabDipCount = isOPP002 ? 2 : 0;
-
-  // Find the latest quote based on updatedAt
-  const latestQuote = useMemo(() => {
-    if (mockQuotes.length === 0) return null;
-    return mockQuotes.reduce((latest, current) => {
-      const latestDate = new Date(getSortKey(latest));
-      const currentDate = new Date(getSortKey(current));
-      return currentDate > latestDate ? current : latest;
-    });
-  }, [mockQuotes]);
 
   // Mock selection data for Selected Products card
   const mockSelection = isOPP002 
@@ -281,10 +304,8 @@ export default function OpportunityDetail() {
     console.log("Send Email clicked");
   };
 
-  const handleViewQuote = () => {
-    if (latestQuote) {
-      navigate(`/quote-editor?id=${latestQuote.id}`);
-    }
+  const handleViewQuote = (quote: Quote) => {
+    navigate(`/quote-editor?id=${quote.id}`);
   };
 
   const TimelineEntry = ({ entry }: { entry: any }) => {
@@ -518,65 +539,25 @@ export default function OpportunityDetail() {
               </CardContent>
             </Card>
 
-            {/* Latest Quote */}
+            {/* Quotes */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Latest Quote</CardTitle>
+                <CardTitle className="text-lg">Quotes</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {latestQuote ? (
-                  <>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Quote ID</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{latestQuote.id}</span>
-                          <Badge variant={latestQuote.status === "Sent" ? "default" : "secondary"} className="text-xs">
-                            {latestQuote.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <hr className="border-border" />
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Validity Date</span>
-                        <span className="text-sm">{formatDate(latestQuote.validityDate)}</span>
-                      </div>
-                      
-                      <hr className="border-border" />
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Incoterms</span>
-                        <span className="text-sm">{latestQuote.incoterms}</span>
-                      </div>
-                      
-                      <hr className="border-border" />
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Delivery Terms</span>
-                        <span className="text-sm">{latestQuote.deliveryTerms}</span>
-                      </div>
-                      
-                      <hr className="border-border" />
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Total Value</span>
-                        <span className="text-sm font-medium">{formatCurrency(latestQuote.total)}</span>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      onClick={handleViewQuote}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Quote
-                    </Button>
-                  </>
+                {sortedQuotes.length > 0 ? (
+                  <div className="space-y-4">
+                    {sortedQuotes.map((quote) => (
+                      <QuoteCard
+                        key={quote.id}
+                        quote={quote}
+                        onClick={() => handleViewQuote(quote)}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <div className="py-4 text-center text-muted-foreground">
+                  <div className="py-8 text-center text-muted-foreground">
+                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No quotes available</p>
                   </div>
                 )}
