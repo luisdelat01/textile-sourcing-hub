@@ -322,80 +322,96 @@ export function SpecChecklist({ specs, onConfirm, onUndo }: SpecChecklistProps) 
     return value?.toString() || "";
   };
 
+  // Group specs into logical sections
+  const specSections = {
+    general: ["fabricType", "weightGSM", "color"] as SpecKey[],
+    targets: ["MOQ", "priceTarget", "deliveryWindow"] as SpecKey[],
+    certifications: ["certifications", "handFeelNotes"] as SpecKey[]
+  };
+
+  const sectionTitles = {
+    general: "General Information",
+    targets: "Targets & Requirements", 
+    certifications: "Certifications & Notes"
+  };
+
+  const renderSpecSection = (sectionKey: keyof typeof specSections, title: string) => {
+    const sectionSpecs = specSections[sectionKey];
+    const missingSectionSpecs = sectionSpecs.filter(key => missingSpecs.includes(key));
+    const confirmedSectionSpecs = sectionSpecs.filter(key => confirmedSpecs.includes(key));
+    
+    if (missingSectionSpecs.length === 0 && confirmedSectionSpecs.length === 0) {
+      return null;
+    }
+
+    return (
+      <div key={sectionKey}>
+        <h4 className="font-medium text-sm text-muted-foreground mb-3">{title}</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Missing specs in this section */}
+          {missingSectionSpecs.map((key) => (
+            <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Circle className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="font-medium text-sm">{specLabels[key]}</div>
+                  <div className="text-xs text-muted-foreground">{specDescriptions[key]}</div>
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleEdit(key)}
+                aria-label={`Add ${specLabels[key]}`}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+            </div>
+          ))}
+          
+          {/* Confirmed specs in this section */}
+          {confirmedSectionSpecs.map((key) => (
+            <div key={key} className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <div>
+                  <div className="font-medium text-sm">{specLabels[key]}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatSpecValue(key, specs[key])}
+                  </div>
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => handleEdit(key)}
+                aria-label={`Edit ${specLabels[key]}`}
+              >
+                <Edit3 className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CheckCircle className="h-5 w-5" />
-          Specification Checklist
+          Specifications
         </CardTitle>
         <CardDescription>
           Track and confirm all required specifications for this opportunity
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Missing Specs */}
-        {missingSpecs.length > 0 && (
-          <div>
-            <h4 className="font-medium text-sm text-muted-foreground mb-3">
-              Missing Specifications ({missingSpecs.length})
-            </h4>
-            <div className="space-y-2">
-              {missingSpecs.map((key) => (
-                <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Circle className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium text-sm">{specLabels[key]}</div>
-                      <div className="text-xs text-muted-foreground">{specDescriptions[key]}</div>
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => handleEdit(key)}
-                    aria-label={`Add ${specLabels[key]}`}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Confirmed Specs */}
-        {confirmedSpecs.length > 0 && (
-          <div>
-            <h4 className="font-medium text-sm text-muted-foreground mb-3">
-              Confirmed Specifications ({confirmedSpecs.length})
-            </h4>
-            <div className="space-y-2">
-              {confirmedSpecs.map((key) => (
-                <div key={key} className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <div>
-                      <div className="font-medium text-sm">{specLabels[key]}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatSpecValue(key, specs[key])}
-                      </div>
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => handleEdit(key)}
-                    aria-label={`Edit ${specLabels[key]}`}
-                  >
-                    <Edit3 className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
+        {Object.entries(sectionTitles).map(([key, title]) => 
+          renderSpecSection(key as keyof typeof specSections, title)
         )}
 
         {/* Dialog for editing */}

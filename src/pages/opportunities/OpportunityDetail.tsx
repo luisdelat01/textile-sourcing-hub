@@ -253,191 +253,130 @@ export default function OpportunityDetail() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-4">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="selections">Selections</TabsTrigger>
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
-            <TabsTrigger value="pos">POs</TabsTrigger>
             <TabsTrigger value="lab-dips">Lab Dips</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline & Emails</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
-            <div className="grid gap-6">
-              {/* Metrics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Missing Specs</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" aria-live="polite">{metrics.missingSpecs}</div>
-                    <p className="text-xs text-muted-foreground">
-                      specifications pending
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Samples</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.activeSamples}</div>
-                    <p className="text-xs text-muted-foreground">
-                      samples in progress
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Open Quotes</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.openQuotes}</div>
-                    <p className="text-xs text-muted-foreground">
-                      awaiting response
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Open POs</CardTitle>
-                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{metrics.openPOs}</div>
-                    <p className="text-xs text-muted-foreground">
-                      in fulfillment
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+            <div className="space-y-8">
+              {/* Opportunity Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Opportunity Summary</CardTitle>
+                  <CardDescription>Key metrics and progress indicators</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Missing Specs</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold" aria-live="polite">{metrics.missingSpecs}</div>
+                        <p className="text-xs text-muted-foreground">
+                          specifications pending
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Active Samples</CardTitle>
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{metrics.activeSamples}</div>
+                        <p className="text-xs text-muted-foreground">
+                          samples in progress
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Open Quotes</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{metrics.openQuotes}</div>
+                        <p className="text-xs text-muted-foreground">
+                          awaiting response
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Open POs</CardTitle>
+                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{metrics.openPOs}</div>
+                        <p className="text-xs text-muted-foreground">
+                          in fulfillment
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* Spec Checklist */}
+              {/* Specifications */}
               <SpecChecklist 
                 specs={specs} 
                 onConfirm={handleSpecConfirm}
                 onUndo={lastSpecChange ? handleUndo : undefined}
               />
 
-              {/* Timeline & Emails Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Timeline */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+              {/* Latest Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
                       <Clock className="h-5 w-5" />
-                      Timeline
-                    </CardTitle>
-                    <CardDescription>Recent activity and stage changes</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {opportunity.timeline?.slice().reverse().map((event, index) => (
-                        <div key={index} className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                            {index !== opportunity.timeline.length - 1 && (
-                              <div className="w-px h-full bg-border mt-2" />
-                            )}
-                          </div>
-                          <div className="flex-1 pb-4">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4 className="font-medium text-sm">{event.event}</h4>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDate(event.date)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{event.description}</p>
-                          </div>
+                      Latest Activity
+                    </span>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Switch to Timeline & Emails tab
+                      const timelineTab = document.querySelector('[value="timeline"]') as HTMLButtonElement;
+                      if (timelineTab) timelineTab.click();
+                    }}>
+                      View Full Timeline
+                    </Button>
+                  </CardTitle>
+                  <CardDescription>Recent updates and milestones</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {opportunity.timeline?.slice(-3).reverse().map((event, index) => (
+                      <div key={index} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                          {index !== 2 && (
+                            <div className="w-px h-full bg-border mt-2" />
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Linked Emails */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Mail className="h-5 w-5" />
-                      Linked Emails
-                    </CardTitle>
-                    <CardDescription>Recent communication history</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">Sophie Green</span>
+                        <div className="flex-1 pb-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-sm">{event.event}</h4>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(event.date)}
+                            </span>
                           </div>
-                          <span className="text-xs text-muted-foreground">Sep 3, 2025</span>
+                          <p className="text-sm text-muted-foreground">{event.description}</p>
                         </div>
-                        <p className="text-sm font-medium mb-1">Re: Lab Dip Colors for AW25</p>
-                        <p className="text-xs text-muted-foreground">
-                          The lab dip samples look great! Can we proceed with the bulk order?
-                        </p>
                       </div>
-
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">Marcus Chen</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Sep 1, 2025</span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">Quote Request Follow-up</p>
-                        <p className="text-xs text-muted-foreground">
-                          Following up on the fabric pricing we discussed at the meeting.
-                        </p>
-                      </div>
-
-                      <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">Alice Rivera</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Aug 28, 2025</span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">Initial Requirements</p>
-                        <p className="text-xs text-muted-foreground">
-                          Thank you for the detailed spec sheet. We're excited to move forward!
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="selections">
-            <Card>
-              <CardHeader>
-                <CardTitle>Selections</CardTitle>
-                <CardDescription>
-                  Fabric and material selections for this opportunity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
-                  eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, 
-                  sunt in culpa qui officia deserunt mollit anim id est laborum.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="quotes">
             <div className="space-y-6">
@@ -539,58 +478,142 @@ export default function OpportunityDetail() {
             </div>
           </TabsContent>
 
-          <TabsContent value="pos">
-            <Card>
-              <CardHeader>
-                <CardTitle>Purchase Orders</CardTitle>
-                <CardDescription>
-                  Purchase orders and fulfillment tracking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, 
-                  sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. 
-                  Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="lab-dips">
             <Card>
               <CardHeader>
-                <CardTitle>Lab Dips</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Lab Dips
+                </CardTitle>
                 <CardDescription>
                   Color matching and lab dip approvals
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit 
-                  laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure 
-                  reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur.
-                </p>
+                <div className="text-center py-12">
+                  <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Lab Dip Tracking</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Lab dip tracking coming soon — you'll be able to monitor lab dip requests, 
+                    status, and approvals here. Track color accuracy, approval workflows, 
+                    and coordinate with production teams.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="timeline">
-            <Card>
-              <CardHeader>
-                <CardTitle>Timeline</CardTitle>
-                <CardDescription>
-                  Project timeline and milestone tracking
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis 
-                  praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias 
-                  excepturi sint occaecati cupiditate non provident, similique sunt in culpa.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Full Timeline */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Complete Timeline
+                  </CardTitle>
+                  <CardDescription>All activity and stage changes for this opportunity</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {opportunity.timeline?.slice().reverse().map((event, index) => (
+                      <div key={index} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                          {index !== opportunity.timeline.length - 1 && (
+                            <div className="w-px h-full bg-border mt-2" />
+                          )}
+                        </div>
+                        <div className="flex-1 pb-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-sm">{event.event}</h4>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(event.date)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{event.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Linked Emails */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Linked Emails
+                  </CardTitle>
+                  <CardDescription>Communication history for this opportunity</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">Sophie Green</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">Sep 3, 2025</span>
+                      </div>
+                      <p className="text-sm font-medium mb-1">Re: Lab Dip Colors for AW25</p>
+                      <p className="text-xs text-muted-foreground">
+                        The lab dip samples look great! Can we proceed with the bulk order?
+                        Looking forward to your confirmation on the delivery timeline.
+                      </p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">Marcus Chen</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">Sep 1, 2025</span>
+                      </div>
+                      <p className="text-sm font-medium mb-1">Quote Request Follow-up</p>
+                      <p className="text-xs text-muted-foreground">
+                        Following up on the fabric pricing we discussed at the meeting.
+                        Can you provide updated MOQ requirements?
+                      </p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">Alice Rivera</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">Aug 28, 2025</span>
+                      </div>
+                      <p className="text-sm font-medium mb-1">Initial Requirements</p>
+                      <p className="text-xs text-muted-foreground">
+                        Thank you for the detailed spec sheet. We're excited to move forward!
+                        The fabric samples you sent match our vision perfectly.
+                      </p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">David Kim</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">Aug 25, 2025</span>
+                      </div>
+                      <p className="text-sm font-medium mb-1">Project Kickoff</p>
+                      <p className="text-xs text-muted-foreground">
+                        Welcome to the FW26 development project! Attached are the initial
+                        brand guidelines and seasonal color palette.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
