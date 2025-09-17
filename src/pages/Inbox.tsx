@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { mockThreads, EmailThread } from "./inbox/mockData";
 import StatusBadge from "./inbox/StatusBadge";
 import AISummaryCard from "./inbox/AISummaryCard";
@@ -12,6 +14,7 @@ import AISummaryCard from "./inbox/AISummaryCard";
 export default function Inbox() {
   const [selectedThread, setSelectedThread] = useState<EmailThread | null>(mockThreads[0]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAIViewEnabled, setIsAIViewEnabled] = useState(true);
 
   const filteredThreads = mockThreads.filter(thread =>
     thread.opportunityTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,19 +67,33 @@ export default function Inbox() {
       <div className="w-[70%] flex flex-col">
         {selectedThread ? (
           <>
-            {/* AI Summary Card */}
-            <div className="p-6 border-b bg-background">
-              <AISummaryCard 
-                summary={selectedThread.summary}
-                suggestedNextStep={selectedThread.suggestedNextStep}
-                buyerIntent={selectedThread.buyerIntent}
-              />
+            {/* Header with AI Toggle */}
+            <div className="p-4 border-b bg-background flex items-center justify-between">
+              <h2 className="text-xl font-semibold">{selectedThread.subject}</h2>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="ai-view" className="text-sm font-medium">AI View</Label>
+                <Switch
+                  id="ai-view"
+                  checked={isAIViewEnabled}
+                  onCheckedChange={setIsAIViewEnabled}
+                />
+              </div>
             </div>
+
+            {/* AI Summary Card - Conditionally rendered */}
+            {isAIViewEnabled && (
+              <div className="p-6 border-b bg-background">
+                <AISummaryCard 
+                  summary={selectedThread.summary}
+                  suggestedNextStep={selectedThread.suggestedNextStep}
+                  buyerIntent={selectedThread.buyerIntent}
+                />
+              </div>
+            )}
 
             {/* Message Thread */}
             <ScrollArea className="flex-1 p-6">
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold mb-4">{selectedThread.subject}</h2>
                 
                 {selectedThread.messages.map((message, index) => (
                   <div key={message.id}>
