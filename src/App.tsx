@@ -12,6 +12,7 @@ import SelectionBuilder from "./pages/SelectionBuilder";
 import QuoteEditor from "./pages/QuoteEditor";
 import POReview from "./pages/POReview";
 import LabDips from "./pages/LabDips";
+import Inbox from "./pages/Inbox";
 import ClientPortal from "./pages/ClientPortal";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="quote-editor" element={<QuoteEditor />} />
             <Route path="po-review" element={<POReview />} />
             <Route path="lab-dips" element={<LabDips />} />
+            <Route path="inbox" element={<Inbox />} />
           </Route>
           
           {/* Client Portal - separate layout */}

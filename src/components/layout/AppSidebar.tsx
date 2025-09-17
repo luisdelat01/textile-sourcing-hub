@@ -5,6 +5,7 @@ import {
   FileText,
   ShoppingCart,
   Palette,
+  Mail,
   Users,
   ChevronDown,
 } from "lucide-react";
@@ -47,6 +48,11 @@ const mainItems = [
     title: "Lab Dips",
     url: "/lab-dips",
     icon: Palette,
+  },
+  {
+    title: "Inbox",
+    url: "/inbox",
+    icon: Mail,
   },
 ];
 
