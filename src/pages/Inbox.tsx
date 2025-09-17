@@ -25,7 +25,7 @@ export default function Inbox() {
   return (
     <div className="h-full flex">
       {/* Left Column - Thread List (30%) */}
-      <div className="w-[30%] border-r bg-muted/30">
+      <div className="flex-[3] min-w-[250px] border-r bg-muted/30">
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -64,7 +64,7 @@ export default function Inbox() {
       </div>
 
       {/* Right Column - Conversation View (70%) */}
-      <div className="w-[70%] flex flex-col">
+      <div className="flex-[7] flex flex-col">
         {selectedThread ? (
           <>
             {/* Header with AI Toggle */}
